@@ -3,7 +3,7 @@ using namespace std;
 #include<fstream>
 #include<math.h>
 #include<iostream>
-void pair_correlation(atom Atoms[],int nAtoms,int END,Vector box,double temp) {
+void pair_correlation(atom* Atoms,int nAtoms,int END,Vector box,double temp) {
     double r=0,rr;
     static int g_r[1000]= {0};
     static double bin_width=sqrt(v_dot(box,box))/1000.0;
@@ -13,17 +13,16 @@ void pair_correlation(atom Atoms[],int nAtoms,int END,Vector box,double temp) {
     char buffer[32];
     snprintf(buffer,sizeof(char)*32,"g_r_%f.dat",temp);
     std::ofstream G_R(buffer);
+    if(!G_R)
+	cout<<"error\n";
     int bin_no=0;
     Vector dr;
     for(int i=0; i<nAtoms; i++)
         for(int j=i+1; j<nAtoms; j++) {
             dr=v_sub(Atoms[i].pos,Atoms[j].pos);
             dr=VWrap(dr,box);
-            //cout<<i<<"\t"<<Atoms[i].pos.x<<"\t"<<Atoms[i].pos.y<<"\t"<<Atoms[i].pos.z<<"\n"; 
-            //cout<<j<<"\t"<<Atoms[j].pos.x<<"\t"<<Atoms[j].pos.y<<"\t"<<Atoms[j].pos.z<<"\n"; 
             rr=v_dot(dr,dr);
             r=sqrt(rr);
-	    //cout<<i<<"\t"<<j<<"\t"<<r<<"\n";
             bin_no=int(r/bin_width);
             g_r[bin_no]=g_r[bin_no]+2;
         }

@@ -4,5 +4,6 @@
 class atom {
 public:
     Vector pos;
+    int cluster_index=-1;
 };
 #endif

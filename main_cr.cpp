@@ -21,9 +21,9 @@ double cal_pot (atom Atoms[],int nAtoms,int i) {
         dr=v_sub(Atoms[j].pos,Atoms[i].pos);
         dr=VWrap(dr,box);
         rr=v_dot(dr,dr);
-	rr=sqrt(rr);
+        rr=sqrt(rr);
         if (rr<6.0 and rr) {
-            PE=PE+int_pot_cr(rr)-P_cut;//4.0*(1.0/pow(rr,6)-1.0/pow(rr,3))-P_cut;
+            PE=PE+int_pot_cr(rr);//4.0*(1.0/pow(rr,6)-1.0/pow(rr,3))-P_cut;
         }
     }
     return PE;
@@ -55,12 +55,15 @@ void mcmove(atom Atoms[],int nAtoms) {
     P=exp(-1.0/temp*(POTn-POTo));
     //cout<<POTo<<"\t"<<POTn<<"\t"<<random_integer<<"\n";
     r=uni_d(rng);
+    Iter++;
     if(P>1)
     {
+        Nacc++;
         return;
     }
     else if (r<P)
     {
+        Nacc++;
         return;
     }
     else
@@ -72,31 +75,39 @@ void mcmove(atom Atoms[],int nAtoms) {
 int main() {
     int nAtoms,N;
     atom Atoms[1000];
-    cout<<"Enter the Box Dimenions:\n";
-    cin>>box.x>>box.y>>box.z;
+    //cout<<"Enter the Box Dimenions:\n";
+    //cin>>box.x>>box.y>>box.z;
     cout<<"Enter the number of atoms:\n";
     cin>>nAtoms;
     cout<<"Enter how long you want to run the simulation:\n";
     cin>>N;
     cout<<"temp\n";
     cin>>temp;
+    box=inipos_bcc(Atoms,nAtoms,box,1.4);
     density=nAtoms/(2*box.x*2*box.y*2*box.z);
     cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z);
-    box=inipos_bcc(Atoms,nAtoms,box);
     clock_t begin=clock();
+    double EqN=10000;
     int END=0;
+    for(int i=0; i<EqN; i++) {
+        for(int n=0; n<nAtoms; n++)
+            mcmove(Atoms,nAtoms);
+    }
+    Nacc=0;
+    Iter=0;
     for(int i=0; i<N; i++) {
         for(int n=0; n<nAtoms; n++)
             mcmove(Atoms,nAtoms);
         pot_energy(Atoms,nAtoms,i);
-	if (fmod(i,1000)==0)
-		cout<<i<<"\n";
-        if(i > 5000) {
+        if (fmod(i,100)==0) {
+            cout<<i<<"\n";
             pair_correlation(Atoms,nAtoms,0,box,temp);
-            if(i==N-1)
-                pair_correlation(Atoms,nAtoms,1,box,temp);
         }
+        if(i==N-1)
+            pair_correlation(Atoms,nAtoms,1,box,temp);
     }
+
+    cout<<"acceptance ration\t"<<float(Nacc)/float(Iter)<<"\n";
     clock_t end =clock();
     double elapsed_time= double (end-begin)/CLOCKS_PER_SEC;
     cout<<box.x<<"\t"<<box.y<<"\t"<<box.z<<"\n";
