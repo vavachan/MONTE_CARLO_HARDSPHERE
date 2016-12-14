@@ -106,7 +106,7 @@ void vmove(atom Atoms[],int nAtoms) {
     lnV0=log(old_vol);
     lnV=lnV0+dlnV*(uni_d(rng)-0.5);
     vol=exp(lnV);
-    Lnew=pow(vol,0.3333333)/2.0;
+    Lnew=pow(vol,1.0/3.0)/2.0;
     f=Lnew/box.x;
     box.x *= f;
     box.y *= f;
@@ -216,18 +216,21 @@ int main() {
     cin>>Press;
     cin>>density;
     vol=nAtoms/density;
-    box.x=pow(vol,0.333333)/2; 
-    box.y=pow(vol,0.333333)/2; 
-    box.z=pow(vol,0.333333)/2; 
+    box.x=pow(vol,1.0/3.0)/2.; 
+    box.y=pow(vol,1.0/3.0)/2.; 
+    box.z=pow(vol,1.0/3.0)/2.; 
     inipos(Atoms,nAtoms,box);
     density=nAtoms/(2*box.x*2*box.y*2*box.z);
     vol=2*box.x*2*box.y*2*box.z;
+    cout<<box.x<<"\n";
     cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z)<<"\n";
+    cout<<check_overlap(Atoms,nAtoms)<<"\n";
     clock_t begin=clock();
     double EqN=300000;
     int END=0;
     int rand=0;
     cout<<"Press="<<Press<<"\n";
+///c
     for(int i=0; i<EqN; i++) {
         std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
@@ -236,10 +239,11 @@ int main() {
                 mcmove_hardsphere(Atoms,nAtoms);
         }
         else {
-           // vmove(Atoms,nAtoms);
+            vmove(Atoms,nAtoms);
             density=nAtoms/vol;
+    //        cout<<i<<"\t"<<density<<"\n";
         }
-        if(fmod(i,1000)==0)
+        if(fmod(i,10000)==0)
         {   cout<<i<<"\n";
         }
     }
@@ -249,6 +253,7 @@ int main() {
     Nacc_v=0;
     Iter_v=0;
     int flag=0;
+    double den_sum=0;
     //  n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
     //cout<<n<<"\n";
     for(int i=0; i<N; i++) {
@@ -261,22 +266,23 @@ int main() {
         else {
             vmove(Atoms,nAtoms);
             density=nAtoms/vol;
-            cout<<i<<"\t"<<density<<"\n";
+            //cout<<i<<"\t"<<density<<"\n";
         }
+	den_sum+=density;
         if(fmod(i,100)==0)
-        {  // cout<<i<<"\n";
+        {   
             if(fmod(i,1000)==0)
-            {
+            {cout<<i<<"\n";
               g_d=pair_correlation(Atoms,nAtoms,1,box,temp);
             }
             else
                g_d=pair_correlation(Atoms,nAtoms,0,box,temp);
-	//	cout<<i<<"\t"<<g_d<<"\n";
-	    cout<<i<<"\t"<<1+2.*M_PI*density*pow(R_CUT_HS,3)*g_d/3.0<<"\t"<<g_d<<"\n";
+//		cout<<i<<"\t"<<g_d<<"\n";
         }
         if(i>1000)
             flag=1;
     }
+   cout<<(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<(M_PI/6.0)*den_sum/N<<"\t"<<g_d<<"\n";
     
     print_pos(Atoms,nAtoms);
     cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
