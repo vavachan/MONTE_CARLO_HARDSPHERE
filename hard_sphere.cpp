@@ -230,18 +230,20 @@ int main() {
     int END=0;
     int rand=0;
     cout<<"Press="<<Press<<"\n";
-///c
+    char buffer[32];
+    snprintf(buffer,sizeof(char)*32,"density_%f.dat",Press);
+    std::ofstream DENSITY(buffer);
     for(int i=0; i<EqN; i++) {
         std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
-        if(rand<nAtoms+1) {
+        if(rand<nAtoms) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
                 mcmove_hardsphere(Atoms,nAtoms);
         }
         else {
             vmove(Atoms,nAtoms);
             density=nAtoms/vol;
-    //        cout<<i<<"\t"<<density<<"\n";
+            DENSITY<<i<<"\t"<<density<<"\n";
         }
         if(fmod(i,10000)==0)
         {   cout<<i<<"\n";
@@ -259,14 +261,14 @@ int main() {
     for(int i=0; i<N; i++) {
         std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
-        if(rand<nAtoms+1) {
+        if(rand<nAtoms) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
                 mcmove_hardsphere(Atoms,nAtoms);
         }
         else {
             vmove(Atoms,nAtoms);
             density=nAtoms/vol;
-            //cout<<i<<"\t"<<density<<"\n";
+            DENSITY<<i<<"\t"<<density<<"\n";
         }
 	den_sum+=density;
         if(fmod(i,100)==0)
@@ -282,7 +284,7 @@ int main() {
         if(i>1000)
             flag=1;
     }
-   cout<<(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<(M_PI/6.0)*den_sum/N<<"\t"<<g_d<<"\n";
+   cout<<temp*k_b*(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<den_sum/N<<"\t"<<g_d<<"\n";
     
     print_pos(Atoms,nAtoms);
     cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
