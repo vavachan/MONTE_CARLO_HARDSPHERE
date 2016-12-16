@@ -4,11 +4,10 @@ using namespace std;
 #include<iostream>
 #include<math.h>
 #include </home/varghese/Academitialismational/PHD1stsem/Monte_Carlo_fluid/boost_1_62_0/boost/math/special_functions/spherical_harmonic.hpp>
-
+double shell_one=2.95;
 double order_para_global(atom Atoms[],int nAtoms,int l,Vector box) {
     Vector r_ij;
     double rr;
-    double shell_one=1.5;
     long* Nb;
     Nb= new (nothrow) long [nAtoms];
     if(Nb==nullptr) {
@@ -81,7 +80,6 @@ double order_para_global(atom Atoms[],int nAtoms,int l,Vector box) {
 double order_para_local(atom Atoms[],int nAtoms,int l,Vector box) {
     Vector r_ij;
     double rr;
-    double shell_one=1.5;
     long* Nb;
     Nb= new (nothrow) long [nAtoms];
     if(Nb==nullptr) {
@@ -161,15 +159,14 @@ void q_lm_i(atom Atoms[],int nAtoms,int i, Vector box,int l,double* Q_Lj_i,doubl
 {
     Vector r_ij;
     double rr;
-    double shell_one=1.5;
     long NB=0;
     double Q_L=0;
     //double Q_Li_i[100]= {0.0},Q_Lj_i[100]= {0.0};
     //double Q_Li_r[100]= {0.0},Q_Lj_r[100]= {0.0};
-    for(int m=0;m<2*l+1;m++){
-	Q_Lj_i[m]=0.0;
-	Q_Lj_r[m]=0.0;
-	}
+    for(int m=0; m<2*l+1; m++) {
+        Q_Lj_i[m]=0.0;
+        Q_Lj_r[m]=0.0;
+    }
     double THETA,PHI,r;
     for(int j=0; j<nAtoms; j++) {
         if(i != j) {
@@ -201,17 +198,7 @@ void q_lm_i(atom Atoms[],int nAtoms,int i, Vector box,int l,double* Q_Lj_i,doubl
         Q_Lj_r[m]=Q_Lj_r[m]/NB;
     }
 }
-int check_bond(int i,int j, atom Atoms[],int nAtoms,int l,Vector box) {
-    double* Q_lm_i_i;
-    double* Q_lm_i_r;
-    double* Q_lm_j_i;
-    double* Q_lm_j_r;
-    Q_lm_i_r = new (nothrow) double[2*l+1];
-    Q_lm_j_r = new (nothrow) double[2*l+1];
-    Q_lm_i_i = new (nothrow) double[2*l+1];
-    Q_lm_j_i = new (nothrow) double[2*l+1];
-    q_lm_i(Atoms,nAtoms,j,box,l,Q_lm_j_i,Q_lm_j_r);
-    q_lm_i(Atoms,nAtoms,i,box,l,Q_lm_i_i,Q_lm_i_r);
+int check_bond(int i,int j, atom Atoms[],int nAtoms,int l,Vector box,double Q_lm_i_r[],double Q_lm_i_i[],double Q_lm_j_r[],double Q_lm_j_i[]) {
     double d_l_ij_i=0,d_l_ij_r=0;
     double d_mod_i=0;
     double d_mod_j=0;
@@ -230,19 +217,201 @@ int check_bond(int i,int j, atom Atoms[],int nAtoms,int l,Vector box) {
     d_l_ij_r=d_l_ij_r/(d_mod_i*d_mod_j);
     if(d_l_ij_r > 0.5 )
     {
-        delete[] Q_lm_i_i;
-        delete[] Q_lm_j_i;
-        delete[] Q_lm_i_r;
-        delete[] Q_lm_j_r;
         return 1;
     }
     else
     {
-        delete[] Q_lm_i_i;
-        delete[] Q_lm_j_i;
-        delete[] Q_lm_i_r;
-        delete[] Q_lm_j_r;
         return 0;
     }
 }
+long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
+    Vector r_ij;
+    long* Nb;
+    double** Q_local_r;
+    double** Q_local_i;
+    Nb= new (nothrow) long [nAtoms];
+    Q_local_i= new (nothrow) double* [nAtoms];
+    Q_local_r= new (nothrow) double* [nAtoms];
+    for(int i=0; i<nAtoms; i++)
+    {
+        Q_local_i[i] = new (nothrow) double [2*l+1];
+        Q_local_r[i] = new (nothrow) double [2*l+1];
+    }
+    int* Nc;
+    int* old_label;
+    double rr,r;
+    Nc= new (nothrow) int[nAtoms];
+    old_label = new (nothrow) int[nAtoms];
+    if(Nc==nullptr) {
+        cout<<"Memory Allocation Failed in cluster.cpp\n";
+        return 0;
+    }
+    if(Nb==nullptr) {
+        cout<<"Memory Allocation Failed in bop.hpp\n";
+        return 0;
+    }
+    for(int n=0; n<nAtoms; n++) {
+        Nb[n]=0;
+    }
+    long NB=0;
+    double Q_L=0;
+    double* Q_Li_i;
+    double* Q_Lj_i;
+    double* Q_Li_r;
+    double* Q_Lj_r;
+    Q_Li_i= new (nothrow) double[2*l+1];
+    Q_Lj_i= new (nothrow) double[2*l+1];
+    Q_Li_r= new (nothrow) double[2*l+1];
+    Q_Lj_r= new (nothrow) double[2*l+1];
+    double THETA,PHI;
+    for(int m=0; m<2*l+1; m++) {
+        Q_Li_i[m]=0.0;
+        Q_Li_r[m]=0.0;
+    }
+    for(int i=0; i<nAtoms; i++) {
+        for(int m=0; m<2*l+1; m++) {
+            Q_Lj_i[m]=0.0;
+            Q_Lj_r[m]=0.0;
+        }
+        //   double Q_Lj_i[100]= {0.0};
+        //   double Q_Lj_r[100]= {0.0};
+        for(int j=0; j<nAtoms; j++) {
+            if(i != j) {
+                r_ij=v_sub(Atoms[i].pos,Atoms[j].pos);
+                r_ij=VWrap(r_ij,box);
+                rr=v_dot(r_ij,r_ij);
+                r=sqrt(rr);
+                if(r<shell_one) {
+                    Nb[i]=Nb[i]+1;
+                    NB=NB+1;
+                    THETA=acos(r_ij.z/r);
+                    if(r_ij.x == 0. and r_ij.y == 0.) {
+                        PHI=0;
+                    }
+                    else {
+                        PHI=atan2(r_ij.y,r_ij.x);
+                        if(PHI<0)
+                            PHI=2*M_PI+PHI;
+                    }
+                    for(int m=0; m<2*l+1; m++) {
+                        Q_Lj_i[m]=Q_Lj_i[m]+boost::math::spherical_harmonic_i <double , double > (l,m-l,THETA, PHI);
+                        Q_Lj_r[m]=Q_Lj_r[m]+boost::math::spherical_harmonic_r <double , double > (l,m-l,THETA, PHI);
+                    }
+                }
+            }
+        }
+        double Q_Li=0;
+        for(int m=0; m<2*l+1; m++) {
+            Q_Li_i[m]=Q_Lj_i[m]/Nb[i];
+            Q_Li_r[m]=Q_Lj_r[m]/Nb[i];
+            Q_Li=Q_Li+(Q_Li_i[m]*Q_Li_i[m]+Q_Li_r[m]*Q_Li_r[m]);
+            Q_local_i[i][m]=Q_Li_i[m];
+            Q_local_r[i][m]=Q_Li_r[m];
+        }
+        Q_Li=4*M_PI/(2*l+1)*Q_Li;
+        Q_L=Q_L+sqrt(Q_Li);
+    }
+    for(int n=0; n<nAtoms; n++) {
+        Nc[n]=0;
+    }
+    for(int i=0; i<nAtoms; i++) {
+        for(int j=i+1; j<nAtoms; j++)
+        {
+
+            r_ij=v_sub(Atoms[i].pos,Atoms[j].pos);
+            r_ij=VWrap(r_ij,box);
+            rr=v_dot(r_ij,r_ij);
+            r=sqrt(rr);
+            if(r<shell_one) {
+                Atoms[i].update_neighbour(j);
+                Atoms[j].update_neighbour(i);
+                if(check_bond(i,j,Atoms,nAtoms,l,box,Q_local_r[i],Q_local_i[i],Q_local_r[j],Q_local_i[j])) {
+                    Atoms[i].connections+=1;
+                    Atoms[j].connections+=1;
+                }
+            }
+        }
+    }
+    for(int i=0; i<nAtoms; i++) {
+        Atoms[i].cluster_index=i;
+    }
+    int min;
+    int change=1;
+    int flag=1;
+    while(change) {
+        for(int i=0; i<nAtoms; i++) {
+            old_label[i]=Atoms[i].cluster_index;
+        }
+        for(int i=0; i<nAtoms; i++) {
+            if(Atoms[i].connections>3) {
+                min=Atoms[i].cluster_index;
+                for(int n=0; n<Nb[i]; n++)
+                    if(Atoms[Atoms[i].neigh_list[n]].connections>3)
+                        if(min>Atoms[Atoms[i].neigh_list[n]].cluster_index)
+                            min=Atoms[Atoms[i].neigh_list[n]].cluster_index;
+                for(int n=0; n<Nb[i]; n++)
+                    if(Atoms[Atoms[i].neigh_list[n]].connections>3)
+                        Atoms[Atoms[i].neigh_list[n]].cluster_index=min;
+            }
+        }
+        change=0;
+        for(int i=0; i<nAtoms; i++) {
+            flag=(old_label[i]!=Atoms[i].cluster_index);
+            if(flag) {
+                change=1;
+            }
+        }
+    }
+//  for(int i=0; i<nAtoms; i++) {
+//      if(Atoms[i].connections>3) {
+//          for(int j=0; j<nAtoms; j++)
+//          {
+//              if(Atoms[j].connections>3) {
+//                  r_ij=v_sub(Atoms[i].pos,Atoms[j].pos);
+//                  r_ij=VWrap(r_ij,box);
+//                  rr=v_dot(r_ij,r_ij);
+//                  r=sqrt(rr);
+//                  if(r<shell_one and r) {
+//                      if(Atoms[j].cluster_index>Atoms[i].cluster_index)
+//                          Atoms[j].cluster_index=Atoms[Atoms[i].cluster_index].cluster_index;
+//                      else
+//                          Atoms[i].cluster_index=Atoms[Atoms[j].cluster_index].cluster_index;
+
+//                  }
+    //  if(r<shell_one and r) {
+//		//  cout<<i<<"\t"<<Atoms[i].cluster_index<<"\t"<<j<<"\t"<<Atoms[j].cluster_index<<"\n";
+    //      if(Atoms[j].cluster_index==-1 and (Atoms[j].connections>3)) {
+    //          Atoms[j].cluster_index=Atoms[i].cluster_index;
+    //      }
+//                  //      else if (Atoms[j].connections>3)
+//              }
+//          }
+//      }
+//  }
+    long max=0;
+    for(int i=0; i<nAtoms; i++)
+    {
+        if(Atoms[i].cluster_index!=-1)
+            Nc[Atoms[i].cluster_index]++;
+    }
+    max=Nc[0];
+    for(int i=0; i<nAtoms; i++)
+        if(Nc[i]>max)
+            max=Nc[i];
+    delete[] Nc;
+    delete[] Nb;
+    delete[] Q_Li_i;
+    delete[] Q_Lj_i;
+    delete[] Q_Li_r;
+    delete[] Q_Lj_r;
+    for(int i=0; i<nAtoms; i++)
+    {
+        delete [] Q_local_i[i];
+        delete [] Q_local_r[i];
+    }
+    delete[] Q_local_i;
+    delete[] Q_local_r;
+    return max;
+}
+
 
