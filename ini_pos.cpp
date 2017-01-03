@@ -1,6 +1,8 @@
 using namespace std;
 #include "atom.hpp"
 #include<iostream>
+#include<math.h>
+#include<iomanip>
 int find_cube(int nAtoms) {
     for(int i=0;1; i++)
         if(i*i*i>=nAtoms) {
@@ -19,18 +21,18 @@ void inipos(atom * Atoms,int nAtoms,Vector box) {
     for(int i=0; i<cube; i++)
         for(int j=0; j<cube; j++)
             for(int k=0; k<cube; k++) {
+                if(n>nAtoms-1)
+                    break;
                 Atoms[n].pos.x=-box.x+grid.x*i+0.5*grid.x;
                 Atoms[n].pos.y=-box.y+grid.y*j+0.5*grid.y;
                 Atoms[n].pos.z=-box.z+grid.z*k+0.5*grid.z;
                 n++;
-                if(n>nAtoms-1)
-                    break;
             }
 }
 Vector inipos_bcc(atom Atoms[],int nAtoms,Vector box,double a) {
     Vector v,X;
     int count=0;
-    int n=5;
+    int n=4;
     box.x=(n)*a/2;
     box.y=(n)*a/2;
     box.z=(n)*a/2;
