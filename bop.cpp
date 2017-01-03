@@ -4,7 +4,8 @@ using namespace std;
 #include<iostream>
 #include<math.h>
 #include </home/varghese/Academitialismational/PHD1stsem/Monte_Carlo_fluid/boost_1_62_0/boost/math/special_functions/spherical_harmonic.hpp>
-double shell_one=2.95;
+double shell_one=1.4;
+double xi=10;
 double order_para_global(atom Atoms[],int nAtoms,int l,Vector box) {
     Vector r_ij;
     double rr;
@@ -209,13 +210,15 @@ int check_bond(int i,int j, atom Atoms[],int nAtoms,int l,Vector box,double Q_lm
 
         d_l_ij_i=d_l_ij_i+(Q_lm_i_i[m]*Q_lm_j_r[m]-Q_lm_i_r[m]*Q_lm_j_i[m]);
         d_l_ij_r=d_l_ij_r+(Q_lm_i_r[m]*Q_lm_j_r[m]+Q_lm_i_i[m]*Q_lm_j_i[m]);
+        //cout<<m<<"\t"<<(Q_lm_i_r[m]*Q_lm_j_r[m]+Q_lm_i_i[m]*Q_lm_j_i[m])<<"\t"<<(Q_lm_i_i[m]*Q_lm_j_r[m]-Q_lm_i_r[m]*Q_lm_j_i[m])<<"\n";
     }
     d_mod_i=sqrt(d_mod_i);
     d_mod_j=sqrt(d_mod_j);
 
     d_l_ij_i=d_l_ij_i/(d_mod_i*d_mod_j);
     d_l_ij_r=d_l_ij_r/(d_mod_i*d_mod_j);
-    if(d_l_ij_r > 0.5 )
+    //  cout<<d_l_ij_r<<"\n";
+    if(d_l_ij_r > 0.7 )
     {
         return 1;
     }
@@ -229,11 +232,14 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
     long* Nb;
     double** Q_local_r;
     double** Q_local_i;
+    double* Q_local;
+    Q_local=new (nothrow) double [nAtoms];
     Nb= new (nothrow) long [nAtoms];
     Q_local_i= new (nothrow) double* [nAtoms];
     Q_local_r= new (nothrow) double* [nAtoms];
     for(int i=0; i<nAtoms; i++)
     {
+        Q_local[i]=0;
         Q_local_i[i] = new (nothrow) double [2*l+1];
         Q_local_r[i] = new (nothrow) double [2*l+1];
     }
@@ -252,6 +258,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
     }
     for(int n=0; n<nAtoms; n++) {
         Nb[n]=0;
+        Nc[n]=0;
     }
     long NB=0;
     double Q_L=0;
@@ -309,6 +316,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
             Q_local_r[i][m]=Q_Li_r[m];
         }
         Q_Li=4*M_PI/(2*l+1)*Q_Li;
+        Q_local[i]=sqrt(Q_Li);
         Q_L=Q_L+sqrt(Q_Li);
     }
     for(int n=0; n<nAtoms; n++) {
@@ -325,6 +333,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
             if(r<shell_one) {
                 Atoms[i].update_neighbour(j);
                 Atoms[j].update_neighbour(i);
+//		cout<<i<<"\t"<<j<<"\n";
                 if(check_bond(i,j,Atoms,nAtoms,l,box,Q_local_r[i],Q_local_i[i],Q_local_r[j],Q_local_i[j])) {
                     Atoms[i].connections+=1;
                     Atoms[j].connections+=1;
@@ -333,7 +342,12 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
         }
     }
     for(int i=0; i<nAtoms; i++) {
-        Atoms[i].cluster_index=i;
+//	cout<<i<<"\t"<<Nb[i]<<"\n";
+        if(Atoms[i].connections>xi) {
+            //     if(Nb[i]==4 and Q_local[i] >= 0.6) {
+            Atoms[i].cluster_index=i;
+            //  cout<<i<<"\t"<<Q_local[i]<<"\n";
+        }
     }
     int min;
     int change=1;
@@ -343,14 +357,18 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
             old_label[i]=Atoms[i].cluster_index;
         }
         for(int i=0; i<nAtoms; i++) {
-            if(Atoms[i].connections>3) {
+            if(Atoms[i].connections>xi) {
+                //    if(Nb[i]==4 and Q_local[i] >= 0.6) {
                 min=Atoms[i].cluster_index;
                 for(int n=0; n<Nb[i]; n++)
-                    if(Atoms[Atoms[i].neigh_list[n]].connections>3)
+                    if(Atoms[Atoms[i].neigh_list[n]].connections>xi)
+                        //       if(Nb[Atoms[i].neigh_list[n]]==4 and Q_local[Atoms[i].neigh_list[n]] >= 0.6)
                         if(min>Atoms[Atoms[i].neigh_list[n]].cluster_index)
                             min=Atoms[Atoms[i].neigh_list[n]].cluster_index;
                 for(int n=0; n<Nb[i]; n++)
-                    if(Atoms[Atoms[i].neigh_list[n]].connections>3)
+                    if(Atoms[Atoms[i].neigh_list[n]].connections>xi)
+//                    if(Nb[Atoms[i].neigh_list[n]]==4 and Q_local[Atoms[i].neigh_list[n]] >= 0.6)
+
                         Atoms[Atoms[i].neigh_list[n]].cluster_index=min;
             }
         }
@@ -391,6 +409,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
     long max=0;
     for(int i=0; i<nAtoms; i++)
     {
+//	cout<<i<<"\t"<<Atoms[i].cluster_index<<"\n";
         if(Atoms[i].cluster_index!=-1)
             Nc[Atoms[i].cluster_index]++;
     }
@@ -411,6 +430,8 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
     }
     delete[] Q_local_i;
     delete[] Q_local_r;
+    delete[] Q_local;
+    delete[] old_label;
     return max;
 }
 

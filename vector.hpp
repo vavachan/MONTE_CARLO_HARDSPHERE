@@ -2,7 +2,7 @@
 #define VECTOR_INCLUDED_H
 class Vector {
 public:
-    double x=0,y=0,z=0;
+   double x=0,y=0,z=0;
 };
 #endif
 Vector v_add(Vector v1,Vector v2);
