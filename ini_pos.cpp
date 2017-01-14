@@ -17,7 +17,8 @@ void inipos(atom * Atoms,int nAtoms,Vector box) {
     grid.x=2*box.x/(cube);
     grid.y=2*box.y/(cube);
     grid.z=2*box.z/(cube);
-    cout<<nAtoms<<"\n";
+ // cout<<grid.x<<"\n";
+ // cout<<nAtoms<<"\n";
     for(int i=0; i<cube; i++)
         for(int j=0; j<cube; j++)
             for(int k=0; k<cube; k++) {

@@ -341,8 +341,12 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
             }
         }
     }
+////////    int i=0;
+////////    for(int j=0;j<15;j++){
+////////	cout<<j<<"\t"<<Atoms[i].neigh_list[j]<<"\n";
+////////	}
     for(int i=0; i<nAtoms; i++) {
-//	cout<<i<<"\t"<<Nb[i]<<"\n";
+//	cout<<i<<"\t"<<Atoms[i].connections<<"\n";
         if(Atoms[i].connections>xi) {
             //     if(Nb[i]==4 and Q_local[i] >= 0.6) {
             Atoms[i].cluster_index=i;
@@ -380,32 +384,6 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
             }
         }
     }
-//  for(int i=0; i<nAtoms; i++) {
-//      if(Atoms[i].connections>3) {
-//          for(int j=0; j<nAtoms; j++)
-//          {
-//              if(Atoms[j].connections>3) {
-//                  r_ij=v_sub(Atoms[i].pos,Atoms[j].pos);
-//                  r_ij=VWrap(r_ij,box);
-//                  rr=v_dot(r_ij,r_ij);
-//                  r=sqrt(rr);
-//                  if(r<shell_one and r) {
-//                      if(Atoms[j].cluster_index>Atoms[i].cluster_index)
-//                          Atoms[j].cluster_index=Atoms[Atoms[i].cluster_index].cluster_index;
-//                      else
-//                          Atoms[i].cluster_index=Atoms[Atoms[j].cluster_index].cluster_index;
-
-//                  }
-    //  if(r<shell_one and r) {
-//		//  cout<<i<<"\t"<<Atoms[i].cluster_index<<"\t"<<j<<"\t"<<Atoms[j].cluster_index<<"\n";
-    //      if(Atoms[j].cluster_index==-1 and (Atoms[j].connections>3)) {
-    //          Atoms[j].cluster_index=Atoms[i].cluster_index;
-    //      }
-//                  //      else if (Atoms[j].connections>3)
-//              }
-//          }
-//      }
-//  }
     long max=0;
     for(int i=0; i<nAtoms; i++)
     {

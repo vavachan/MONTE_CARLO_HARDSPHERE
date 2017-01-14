@@ -4,7 +4,9 @@ using namespace std;
 #include "g_r.hpp"
 #include "bop.hpp"
 void print_pos (atom Atoms[],int nAtoms) {
-    std::ofstream POSITION("OUT/config.dat");
+    char buffer[64];
+    snprintf(buffer,sizeof(char)*64,"OUT/config_%f_%f_%f.dat",temp,float(nAtoms),Press);
+    std::ofstream POSITION(buffer);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
     Vector dr;
@@ -47,7 +49,7 @@ int check_overlap(atom Atoms[],int nAtoms)
             rr=v_dot(dr,dr);
             r=sqrt(rr);
             if(r<R_CUT_HS) {
-                //cout<<i<<"\t"<<j<<"\t"<<rr<<"\n";
+//                cout<<i<<"\t"<<j<<"\t"<<rr<<"\n";
                 return 0;
             }
 
@@ -150,7 +152,7 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc) {
     double P=0;
-    double lambda=0.2;
+    double lambda=0.1;
     double r;
     P=exp(-1.0/temp*lambda*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
     r=uni_d(rng);
@@ -167,35 +169,27 @@ int move_accept(long nn,long no,long nc) {
         return 0;
     }
 }
-long umbrella(atom Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[]) {
+long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[]) {
     long nn=0;
-    atom* old_Atoms;
-    old_Atoms = new (nothrow) atom[nAtoms];
-    if(old_Atoms==nullptr) {
-        cout<<"Memory Allocation Failed\n";
-        return 0;
-    }
     reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
-    back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
+
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
-    //cout<<nn<<"\t"<<no<<"\n";
+    // cout<<nn<<"\t"<<no<<"\n";
     if(move_accept(nn,no,nc)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
-        if(flag) {
-            HISTOGRAM[nn]++;
-        }
-    	delete[] old_Atoms;
-        return no;
+        // if(flag) {
+        //     HISTOGRAM[nn]++;
+        // }
+        // return no;
     }
     else
     {
-        if(flag)
-        {
-            HISTOGRAM[no]++;
-        }
+        //  if(flag)
+        //  {
+        //      HISTOGRAM[no]++;
+        //  }
         replace(Atoms,old_Atoms,nAtoms); //if the move is rejected then reset the config to what it was before the move.
-    	delete[] old_Atoms;
         return no;
     }
 }
@@ -204,22 +198,53 @@ int main(int argc,char* argv[]) {
     long* HISTOGRAM;
     long n;
     double g_d;
-//  cout<<"Enter the number of atoms:\n";  //comment out these too
-//  cin>>nAtoms;				//these too
-    std::ifstream infile(argv[1]);	//uncomment these lines to
-    infile>>nAtoms;			//start the program
-    infile>>box.x;			//from a inital
-    box.z=box.y=box.x;			//configuraton
     atom* Atoms;
-    Atoms = new (nothrow) atom[nAtoms];
-    double a,b,c,d;				//uncomment the
-    nAtoms=0;
-    while(infile>>a>>b>>c>>d) { //>>e>>f>>g>>h) {	//start the pro
-        Atoms[nAtoms].pos.x=b;			//from a inital
-        Atoms[nAtoms].pos.y=c;			//configuraton
-        Atoms[nAtoms].pos.z=d;			//
-        nAtoms++;
-    }						//
+    bool restart;
+    std::string action(argv[1]);
+    if (action == "restart") {
+        restart= true;
+    } else if (action == "new") {
+        restart= false;
+    } else {
+        cout<<"invalid argument\n\n\nexiting....";
+        return 0;
+    }
+    bool bias;
+    std::string action2(argv[2]);
+    if (action2 == "bias") {
+        bias= true;
+    } else if (action2 == "no-bias") {
+        bias= false;
+    } else {
+        cout<<"invalid argument\n\n\nexiting....";
+        return 0;
+    }
+    if(!restart) {
+        cin>>nAtoms;				//these too
+        Atoms = new (nothrow) atom[nAtoms];
+        cin>>density;		//Comment out these line
+        vol=nAtoms/density;		//to change the program
+        box.x=pow(vol,1.0/3.0)/2.;	//to start from a given
+        box.y=pow(vol,1.0/3.0)/2.;	//initial parameters
+        box.z=pow(vol,1.0/3.0)/2.;	//
+        inipos(Atoms,nAtoms,box);	//
+    }
+    else
+    {   std::ifstream infile(argv[3]);	//uncomment these lines to
+        infile>>nAtoms;			//start the program
+        infile>>box.x;			//from a inital
+        box.z=box.y=box.x;
+        Atoms = new (nothrow) atom[nAtoms];
+        double a,b,c,d;				//uncomment the
+        nAtoms=0;
+        while(infile>>a>>b>>c>>d) { //>>e>>f>>g>>h) {	//start the pro
+            Atoms[nAtoms].pos.x=b;			//from a inital
+            Atoms[nAtoms].pos.y=c;			//configuraton
+            Atoms[nAtoms].pos.z=d;			//
+            nAtoms++;
+        }						//
+        density=nAtoms/(2*box.x*2*box.y*2*box.z);
+    }
     HISTOGRAM = new (nothrow) long [nAtoms];
     if(Atoms==nullptr) {
         cout<<"Memory Allocation Failed\n";
@@ -229,41 +254,44 @@ int main(int argc,char* argv[]) {
     {
         HISTOGRAM[i]=0;
     }
-    cout<<"Enter how long you want to run the simulation:\n";
     cin>>N;
-    cout<<"temp\n";
     cin>>temp;
     cin>>Press;
     cin>>nc;
-//  cin>>density;		//Comment out these line
-//  vol=nAtoms/density;		//to change the program
-//  box.x=pow(vol,1.0/3.0)/2.;	//to start from a given
-//  box.y=pow(vol,1.0/3.0)/2.;	//initial parameters
-//  box.z=pow(vol,1.0/3.0)/2.;	//
-//  inipos(Atoms,nAtoms,box);	//
-    density=nAtoms/(2*box.x*2*box.y*2*box.z);
+    double EqN;
+    cin>>EqN;
     vol=2*box.x*2*box.y*2*box.z;
-    cout<<box.x<<"\n";
+    cout<<"no of Atoms:"<<nAtoms<<"\n";
+    cout<<"N:"<<N<<"\n";
+    cout<<"Pressure:"<<Press<<"\n";
+    cout<<"temp:"<<temp<<"\n";
+    cout<<"box:"<<box.x<<"\n";
     cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z)<<"\n";
-    cout<<check_overlap(Atoms,nAtoms)<<"\n";
+    cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n";
     clock_t begin=clock();
-    double EqN=3000;
     int END=0;
     int rand=0;
-    cout<<"Press="<<Press<<"\n";
-    char buffer[32];
+    char buffer[64];
     snprintf(buffer,sizeof(char)*32,"OUT/density_%f.dat",Press);
     std::ofstream DENSITY(buffer);
-    cout<<nc<<"\n";
+    cout<<"nc:"<<nc<<"\n";
     snprintf(buffer,sizeof(char)*32,"OUT/cluster_%f.dat",float(nc));
     std::ofstream CS(buffer);
     n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
     cout<<"n="<<n<<"\n";
     int flag=0;
-    snprintf(buffer,sizeof(char)*32,"OUT/Histogram_%f.dat",float(nc));
+    snprintf(buffer,sizeof(char)*64,"OUT/Histogram_%f_%f.dat",float(nc),Press);
+    atom* old_Atoms;
+    old_Atoms = new (nothrow) atom[nAtoms];
+    int break_point=0;
+    if(old_Atoms==nullptr) {
+        cout<<"Memory Allocation Failed\n";
+        return 0;
+    }
     for(int i=0; i<EqN; i++) {
         std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
+        back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
         if(rand<nAtoms) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
                 mcmove_hardsphere(Atoms,nAtoms);
@@ -274,27 +302,35 @@ int main(int argc,char* argv[]) {
             // cout<<box.x<<"\n";
             DENSITY<<i<<"\t"<<density<<"\n";
         }
-
-        n=umbrella(Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
-        CS<<i<<"\t"<<n<<"\n";
+        if(bias)
+        {
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
+            CS<<i<<"\t"<<n<<"\n";
+        }
         //    cout<<i<<"\n";
-//        reset(Atoms,nAtoms);
+        //    reset(Atoms,nAtoms);
         //    n=largest_cluster(Atoms,nAtoms,l,box);
         //      cout<<i<<"\t"<<n<<"\n";
         //      reset(Atoms,nAtoms);
         if(fmod(i,1000)==0)
         {   cout<<i<<"\n";
-       //   std::ofstream HIS(buffer);
-       //   for(int n=0; n<nAtoms; n++)
-       //   {
-       //       HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n";
-       //   }
-       //   HIS.close();
+            if(bias) {
+                std::ofstream HIS(buffer);
+                for(int n=0; n<nAtoms; n++)
+                {
+                    HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n";
+                }
+                HIS.close();
+            }
+            print_pos(Atoms,nAtoms);
         }
-	if(n==nc){
-		flag=1;
-		break;	
-	}
+        if(bias) {
+            if(n==nc) {
+                flag=1;
+                break_point=i;
+                break;
+            }
+        }
     }
     cout<<"eq completed\n";
     Nacc=0;
@@ -305,6 +341,7 @@ int main(int argc,char* argv[]) {
     for(int i=0; i<N; i++) {
         std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
+//   	back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
         if(rand<nAtoms) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
                 mcmove_hardsphere(Atoms,nAtoms);
@@ -312,36 +349,40 @@ int main(int argc,char* argv[]) {
         else {
             vmove(Atoms,nAtoms);
             density=nAtoms/vol;
-            DENSITY<<i+EqN<<"\t"<<density<<"\n";
+            DENSITY<<i+break_point<<"\t"<<density<<"\n";
         }
-        n=umbrella(Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
-        CS<<i+EqN<<"\t"<<n<<"\n";
+        if(bias) {
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
+            if(flag)
+                HISTOGRAM[n]++;
+            CS<<i+break_point<<"\t"<<n<<"\n";
+        }
         den_sum+=density;
         if(fmod(i,100)==0)
         {
             if(fmod(i,1000)==0)
             {   cout<<i<<"\n";
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp);
-        	std::ofstream HIS(buffer);
-        	for(int n=0; n<nAtoms; n++)
-        	{
-        	    HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n";
-        	}
-        	HIS.close();
+                std::ofstream HIS(buffer);
+                for(int n=0; n<nAtoms; n++)
+                {
+                    HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n";
+                }
+                HIS.close();
             }
             else
                 g_d=pair_correlation(Atoms,nAtoms,0,box,temp);
 //      	cout<<i<<"\t"<<g_d<<"\n";
         }
     }
-    print_pos(Atoms,nAtoms);
     cout<<temp*k_b*(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<den_sum/N<<"\t"<<g_d<<"\n";
     cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
     clock_t end =clock();
     double elapsed_time= double (end-begin)/CLOCKS_PER_SEC;
-    cout<<"\n"<<elapsed_time;
+    cout<<"\n"<<elapsed_time/60.;
     delete[] Atoms;
     delete[] HISTOGRAM;
+    delete[] old_Atoms;
 
     return 0;
 }
