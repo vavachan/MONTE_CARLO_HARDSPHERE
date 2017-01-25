@@ -3,7 +3,7 @@ using namespace std;
 #include<fstream>
 #include<math.h>
 #include<iostream>
-double pair_correlation(atom* Atoms,int nAtoms,int END,Vector box,double temp) {
+double pair_correlation(atom* Atoms,int nAtoms,int END,Vector box,double temp,double Press) {
     double r=0,rr;
     static int g_r[1000]= {0};
     double bin_width=0.01;//sqrt(v_dot(box,box))/1000.0;
@@ -28,7 +28,7 @@ double pair_correlation(atom* Atoms,int nAtoms,int END,Vector box,double temp) {
     counter=counter+1;
     double r_lower,r_upper,omega;
     if(END) {
-	snprintf(buffer,sizeof(char)*32,"OUT/g_r.dat");
+	snprintf(buffer,sizeof(char)*32,"OUT/g_r_%f.dat",float(Press));
 	std::ofstream G_R(buffer);
         for(int i=0; i<1000; i++) {
             r_lower=i*bin_width;
