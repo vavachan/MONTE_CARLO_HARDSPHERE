@@ -5,7 +5,8 @@ void atom::update_neighbour(int neigh)	{
      index++;
 }
 void atom::reset()	{
-	for(int i=0;i<15;i++)
+	neighbours=0;
+	for(int i=0;i<200;i++)
 		neigh_list[i]=0;
 	index=0;
 }
