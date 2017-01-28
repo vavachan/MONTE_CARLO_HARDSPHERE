@@ -112,57 +112,36 @@ void mcmove_hardsphere(atom Atoms[],int nAtoms) {
     auto random_integer = uni(rng);
     int flag=0;
     Vector random_dir;
-    dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
-    dr=VWrap(dr,box);
-    rr=v_dot(dr,dr);
-    Atoms[random_integer].dist=rr;
-    if(rr>gap_sq)
+    atom old_atom;
+    old_atom=Atoms[random_integer];
+ // dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
+ // dr=VWrap(dr,box);
+ // rr=v_dot(dr,dr);
+ // Atoms[random_integer].dist=rr;
+    if(Atoms[random_integer].dist>gap)
     {
-//	cout<<random_integer<<"\n";
         neigh_list_update(Atoms,nAtoms) ;
     }
-    //  cout<<"snap\n";
-// for(int i=0; i<nAtoms-1; i++) {
-//     for(int j=i+1; j<nAtoms; j++)
-//     {
-// Vector dr;
-// double rr;
-
-//         dr=v_sub(Atoms[i].pos,Atoms[i].old_pos);
-//         dr=VWrap(dr,box);
-//         rr=v_dot(dr,dr);
-//         cout<<i<<"\t"<<rr<<"\t";
-//         dr=v_sub(Atoms[j].pos,Atoms[j].old_pos);
-//         dr=VWrap(dr,box);
-//         rr=v_dot(dr,dr);
-//         cout<<j<<"\t"<<rr<<"\t";
-//         dr=v_sub(Atoms[i].pos,Atoms[j].pos);
-//         dr=VWrap(dr,box);
-//         rr=v_dot(dr,dr);
-//         cout<<rr<<"\n";
-//     }
-//   }
     random_dir.x=uni_d(rng)-0.5;
     random_dir.y=uni_d(rng)-0.5;
     random_dir.z=uni_d(rng)-0.5;
 
     Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,JUM);
 
-    dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
-    dr=VWrap(dr,box);
-    rr=v_dot(dr,dr);
-    if(rr>gap_sq)
-    {
-//	cout<<random_integer<<" second\n";
-        neigh_list_update(Atoms,nAtoms) ;
-    }
-    // cout<<random_integer<<"\n";
+ // dr=v_sub(Atoms[random_integer].pos,old_atom.pos);
+ // dr=VWrap(dr,box);
+ // rr=v_dot(dr,dr);
+ // r=sqrt(rr);
+ // Atoms[random_integer].dist+=r;
+ // if(Atoms[random_integer].dist>gap)
+ // {
+ //     neigh_list_update(Atoms,nAtoms) ;
+ // }
 
-    //flag=verlet_list_HS(Atoms,nAtoms,random_integer);
+ // flag=verlet_list_HS(Atoms,nAtoms,random_integer);
     flag=hard_sphere(Atoms,nAtoms,random_integer);
     if(flag!=hard_sphere(Atoms,nAtoms,random_integer))
     {
-        //	cout<<flag<<"\t"<<hard_sphere(Atoms,nAtoms,random_integer)<<"\n";
         cout<<"\n\n\nouch\n\n\n\n";
         exit(0);
 
@@ -174,7 +153,8 @@ void mcmove_hardsphere(atom Atoms[],int nAtoms) {
         return;
     }
     else
-    {   Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,-JUM);
+    {//   Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,-JUM);
+	    Atoms[random_integer]=old_atom;
         return;
     }
 
