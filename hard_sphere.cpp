@@ -4,12 +4,14 @@ using namespace std;
 #include "g_r.hpp"
 #include "bop.hpp"
 #include <cstdlib>
-void print_pos (atom Atoms[],int nAtoms) {
+
+void print_pos (atom Atoms[],int nAtoms,int i) {
     char buffer[64];
     snprintf(buffer,sizeof(char)*64,"OUT/config_%f_%f_%f.dat",temp,float(nAtoms),Press);
     std::ofstream POSITION(buffer);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
+    POSITION<<i<<"\n";
     Vector dr;
     for (int i=0; i<nAtoms; i++)
     {
@@ -50,11 +52,20 @@ int neigh_list_update(atom Atoms[],int nAtoms) {
 int verlet_list_HS(atom Atoms[],int nAtoms,int random_integer) {
     Vector dr;
     double rr;
+    long double twob=2*box.x;
     // cout<<"verlet\n";
     for(int i=0; i<Atoms[random_integer].neighbours; i++) {
-        dr=v_sub(Atoms[random_integer].pos,Atoms[Atoms[random_integer].neigh_list[i]].pos);
-        dr=VWrap(dr,box);
-        rr=v_dot(dr,dr);
+        //  dr=v_sub(Atoms[random_integer].pos,Atoms[Atoms[random_integer].neigh_list[i]].pos);
+
+        dr.x=Atoms[random_integer].pos.x-Atoms[Atoms[random_integer].neigh_list[i]].pos.x;
+        dr.y=Atoms[random_integer].pos.y-Atoms[Atoms[random_integer].neigh_list[i]].pos.y;
+        dr.z=Atoms[random_integer].pos.z-Atoms[Atoms[random_integer].neigh_list[i]].pos.z;
+        dr.x=(dr.x-(twob*lround(dr.x/twob)));
+        dr.y=(dr.y-(twob*lround(dr.y/twob)));
+        dr.z=(dr.z-(twob*lround(dr.z/twob)));
+        rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
+        // dr=VWrap(dr,box);
+        // rr=v_dot(dr,dr);
         //          cout<<random_integer<<"\t"<<Atoms[random_integer].neigh_list[i]<<"\t"<<rr<<"\n";
         if(rr<R_CUT_HS_sq) {
             return 0;
@@ -66,13 +77,22 @@ int verlet_list_HS(atom Atoms[],int nAtoms,int random_integer) {
 int hard_sphere(atom Atoms[],int nAtoms,int j) {
     Vector dr;
     double rr;
+    long double twob=2*box.x;
     //cout<<"hard\n";
     for(int i=0; i<nAtoms; i++) {
         if(i!=j)
         {
-            dr=v_sub(Atoms[i].pos,Atoms[j].pos);
-            dr=VWrap(dr,box);
-            rr=v_dot(dr,dr);
+
+            dr.x=Atoms[i].pos.x-Atoms[j].pos.x;
+            dr.y=Atoms[i].pos.y-Atoms[j].pos.y;
+            dr.z=Atoms[i].pos.z-Atoms[j].pos.z;
+            dr.x=(dr.x-(twob*lround(dr.x/twob)));
+            dr.y=(dr.y-(twob*lround(dr.y/twob)));
+            dr.z=(dr.z-(twob*lround(dr.z/twob)));
+            rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
+            // dr=v_sub(Atoms[i].pos,Atoms[j].pos);
+            // dr=VWrap(dr,box);
+            // rr=v_dot(dr,dr);
             if(rr<R_CUT_HS) {
 //               cout<<j<<"\t"<<i<<"\t"<<rr<<"\n\n";
                 return 0;
@@ -86,12 +106,21 @@ int check_overlap(atom Atoms[],int nAtoms)
 {
     Vector dr;
     double rr,r;
+    long double twob=2*box.x;
     for(int i=0; i<nAtoms-1; i++) {
         for(int j=i+1; j<nAtoms; j++)
         {
-            dr=v_sub(Atoms[i].pos,Atoms[j].pos);
-            dr=VWrap(dr,box);
-            rr=v_dot(dr,dr);
+
+            dr.x=Atoms[i].pos.x-Atoms[j].pos.x;
+            dr.y=Atoms[i].pos.y-Atoms[j].pos.y;
+            dr.z=Atoms[i].pos.z-Atoms[j].pos.z;
+            dr.x=(dr.x-(twob*lround(dr.x/twob)));
+            dr.y=(dr.y-(twob*lround(dr.y/twob)));
+            dr.z=(dr.z-(twob*lround(dr.z/twob)));
+            rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
+            // dr=v_sub(Atoms[i].pos,Atoms[j].pos);
+            // dr=VWrap(dr,box);
+            // rr=v_dot(dr,dr);
             r=sqrt(rr);
             if(r<R_CUT_HS) {
                 //  cout<<i<<"\t"<<j<<"\t"<<rr<<"\n";
@@ -107,6 +136,7 @@ int check_overlap(atom Atoms[],int nAtoms)
 void mcmove_hardsphere(atom Atoms[],int nAtoms) {
     Vector dr;
     double rr;
+    long double twob=2*box.x;
     double POTn,POTo,P,r;
     std::uniform_int_distribution<int> uni(0,nAtoms-1);
     auto random_integer = uni(rng);
@@ -114,10 +144,10 @@ void mcmove_hardsphere(atom Atoms[],int nAtoms) {
     Vector random_dir;
     atom old_atom;
     old_atom=Atoms[random_integer];
- // dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
- // dr=VWrap(dr,box);
- // rr=v_dot(dr,dr);
- // Atoms[random_integer].dist=rr;
+// dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
+// dr=VWrap(dr,box);
+// rr=v_dot(dr,dr);
+// Atoms[random_integer].dist=rr;
     if(Atoms[random_integer].dist>gap)
     {
         neigh_list_update(Atoms,nAtoms) ;
@@ -128,18 +158,26 @@ void mcmove_hardsphere(atom Atoms[],int nAtoms) {
 
     Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,JUM);
 
- // dr=v_sub(Atoms[random_integer].pos,old_atom.pos);
- // dr=VWrap(dr,box);
- // rr=v_dot(dr,dr);
- // r=sqrt(rr);
- // Atoms[random_integer].dist+=r;
- // if(Atoms[random_integer].dist>gap)
- // {
- //     neigh_list_update(Atoms,nAtoms) ;
- // }
+    //dr=v_sub(Atoms[random_integer].pos,old_atom.pos);
 
- // flag=verlet_list_HS(Atoms,nAtoms,random_integer);
-    flag=hard_sphere(Atoms,nAtoms,random_integer);
+    dr.x=Atoms[random_integer].pos.x-old_atom.pos.x;
+    dr.y=Atoms[random_integer].pos.y-old_atom.pos.y;
+    dr.z=Atoms[random_integer].pos.z-old_atom.pos.z;
+    dr.x=(dr.x-(twob*lround(dr.x/twob)));
+    dr.y=(dr.y-(twob*lround(dr.y/twob)));
+    dr.z=(dr.z-(twob*lround(dr.z/twob)));
+    rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
+    //  dr=VWrap(dr,box);
+    //  rr=v_dot(dr,dr);
+    r=sqrt(rr);
+    Atoms[random_integer].dist+=r;
+    if(Atoms[random_integer].dist>gap)
+    {
+        neigh_list_update(Atoms,nAtoms) ;
+    }
+
+    flag=verlet_list_HS(Atoms,nAtoms,random_integer);
+    //flag=hard_sphere(Atoms,nAtoms,random_integer);
     if(flag!=hard_sphere(Atoms,nAtoms,random_integer))
     {
         cout<<"\n\n\nouch\n\n\n\n";
@@ -153,11 +191,10 @@ void mcmove_hardsphere(atom Atoms[],int nAtoms) {
         return;
     }
     else
-    {//   Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,-JUM);
-	    Atoms[random_integer]=old_atom;
+    {   //   Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,-JUM);
+        Atoms[random_integer]=old_atom;
         return;
     }
-
 }
 void back_up(atom Atoms[],atom old_Atoms[],int nAtoms) {
     for(int n=0; n<nAtoms; n++) {
@@ -180,8 +217,6 @@ void reset(atom Atoms[],int nAtoms)
         Atoms[n].connections=0;
         Atoms[n].reset();
     }
-
-
 }
 void vmove(atom Atoms[],int nAtoms) {
     double old_vol,lnV0,lnV;
@@ -263,22 +298,16 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
-        // if(flag) {
-        //     HISTOGRAM[nn]++;
-        // }
         return no;
     }
     else
     {
-        //  if(flag)
-        //  {
-        //      HISTOGRAM[no]++;
-        //  }
         replace(Atoms,old_Atoms,nAtoms); //if the move is rejected then reset the config to what it was before the move.
         return no;
     }
 }
 int main(int argc,char* argv[]) {
+    clock_t begin=clock();
     int nAtoms,N;
     long* HISTOGRAM;
     long n;
@@ -309,37 +338,35 @@ int main(int argc,char* argv[]) {
     if(!restart) {
         cin>>nAtoms;				//these too
         Atoms = new (nothrow) atom[nAtoms];
-        cin>>density;		//Comment out these line
-        vol=nAtoms/density;		//to change the program
-        box.x=pow(vol,1.0/3.0)/2.;	//to start from a given
-        box.y=pow(vol,1.0/3.0)/2.;	//initial parameters
-        box.z=pow(vol,1.0/3.0)/2.;	//
-        inipos(Atoms,nAtoms,box);	//
+        cin>>density;		//Comm
+        vol=nAtoms/density;
+        box.x=pow(vol,1.0/3.0)/2.;
+        box.y=pow(vol,1.0/3.0)/2.;
+        box.z=pow(vol,1.0/3.0)/2.;
+        inipos(Atoms,nAtoms,box);
+ //       random_ini(Atoms,nAtoms,box,R_CUT_HS);
+
     }
     else
-    {   std::ifstream infile(argv[3]);	//uncomment these lines to
-        infile>>nAtoms;			//start the program
-        infile>>box.x;			//from a inital
+    {   std::ifstream infile(argv[3]);
+        infile>>nAtoms;
+        infile>>box.x;
+        int i;
+        infile>>i;
         box.z=box.y=box.x;
         Atoms = new (nothrow) atom[nAtoms];
         double a,b,c,d;				//uncomment the
         nAtoms=0;
-        while(infile>>a>>b>>c>>d) { //>>e>>f>>g>>h) {	//start the pro
-            Atoms[nAtoms].pos.x=b;			//from a inital
-            Atoms[nAtoms].pos.y=c;			//configuraton
-            Atoms[nAtoms].pos.z=d;			//
+        while(infile>>a>>b>>c>>d) { //>>e>>f>>g>>h)
+            Atoms[nAtoms].pos.x=b;
+            Atoms[nAtoms].pos.y=c;
+            Atoms[nAtoms].pos.z=d;
             nAtoms++;
-        }						//
+        }
         density=nAtoms/(2*box.x*2*box.y*2*box.z);
     }
 //##############################################################################################################################
     neigh_list_update(Atoms,nAtoms);
-////////    for(int i=0;i<nAtoms;i++)
-////////	{
-////////	cout<<i<<"\t"<<Atoms[i].neighbours<<"\n";
-////////	for(int n=0;n<Atoms[i].neighbours;n++)
-////////		cout<<i<<"\t"<<Atoms[i].neigh_list[n]<<"\n";
-////////	}
     HISTOGRAM = new (nothrow) long [nAtoms];
     if(Atoms==nullptr) {
         cout<<"Memory Allocation Failed\n";
@@ -383,9 +410,34 @@ int main(int argc,char* argv[]) {
         cout<<"Memory Allocation Failed\n";
         return 0;
     }
-           clock_t begin=clock();
 //#####################################################################################################################################3
     for(int i=0; i<EqN; i++) {
+        if(fmod(i,5)==0) {
+            if(Nacc*(1.0/Iter)<0.5)
+            {
+                JUM=JUM*0.95;
+            }
+            else
+            {
+                JUM=JUM*1.05;
+            }
+            // cout<<i<<"\t"<<JUM<<"\n";
+            Nacc=0;
+            Iter=0;
+        }
+        if(fmod(i,10*nAtoms)==0) {
+            if(Nacc_v*(1.0/Iter_v)<0.5)
+            {
+                dlnV=dlnV*0.95;
+            }
+            else
+            {
+                dlnV=dlnV*1.05;
+            }
+            //cout<<i<<"\t"<<Nacc_v*(1.0/Iter_v)<<"\t"<<dlnV<<"\n";
+            Nacc_v=0;
+            Iter_v=0;
+        }
         std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
         back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
@@ -410,6 +462,7 @@ int main(int argc,char* argv[]) {
         //    n=largest_cluster(Atoms,nAtoms,l,box);
         //      cout<<i<<"\t"<<n<<"\n";
         //      reset(Atoms,nAtoms);
+//	cout<<i*1.0/EqN<<"\n";
         if(fmod(i,1000)==0)
         {   cout<<i*1.0/EqN<<"\n";
             // if(bias) {
@@ -420,7 +473,7 @@ int main(int argc,char* argv[]) {
             //   }
             //   HIS.close();
             // }
-            print_pos(Atoms,nAtoms);
+            print_pos(Atoms,nAtoms,i);
         }
         if(bias) {
             if(n==nc) {
@@ -471,16 +524,16 @@ int main(int argc,char* argv[]) {
                     HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n";
                 }
                 HIS.close();
-                print_pos(Atoms,nAtoms);
+                print_pos(Atoms,nAtoms,i);
             }
             else
                 g_d=pair_correlation(Atoms,nAtoms,0,box,temp,Press);
 //      	cout<<i<<"\t"<<g_d<<"\n";
         }
     }
-	 clock_t end =clock();
-	 double elapsed_time= double (end-begin)/CLOCKS_PER_SEC;
-	 cout<<elapsed_time/60.<<"\n";
+    clock_t end =clock();
+    double elapsed_time= double (end-begin)/CLOCKS_PER_SEC;
+    cout<<elapsed_time/60.<<"\n";
     cout<<temp*k_b*(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<den_sum/N<<"\t"<<(M_PI/6.0)*den_sum/N<<"\t"<<g_d<<"\n";
     cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
     delete[] Atoms;

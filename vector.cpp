@@ -15,39 +15,40 @@
     return v_diff;
 }
 
- double v_dot(Vector v1,Vector v2) {
+ long double v_dot(Vector v1,Vector v2) {
     return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z;
 }
  Vector VWrap(Vector v,Vector box) {
-    double x,y,z;
-    v.x=fmod(v.x,2*box.x);
-    v.y=fmod(v.y,2*box.y);
-    v.z=fmod(v.z,2*box.z);
+    long double x,y,z;
+    long double twob=2*box.x;
+    v.x=fmod(v.x,twob);
+    v.y=fmod(v.y,twob);
+    v.z=fmod(v.z,twob);
     if (v.x >= box.x) {
-        v.x -=  2*box.x;
+        v.x -=  twob;
     }
     else if (v.x < -box.x) {
-        v.x += 2*box.x;
+        v.x += twob;
     }
 
     if (v.y >= box.y) {
-        v.y -= 2*box.y;
+        v.y -= twob;
     }
     else if (v.y < -box.y) {
-        v.y += 2*box.y;
+        v.y += twob;
     }
 
     if (v.z >= box.z) {
-        v.z -=2*box.z;
+        v.z -=twob;
     }
     else if (v.z < -box.z) {
-        v.z += 2*box.z;
+        v.z += twob;
     }
 
     return v;
 }
 
- Vector v_Sadd(Vector v1,Vector v2,double factor) {
+ Vector v_Sadd(Vector v1,Vector v2,long double factor) {
     Vector v_sum;
     v_sum.x=v1.x+factor*v2.x;
     v_sum.y=v1.y+factor*v2.y;
@@ -55,7 +56,7 @@
     return v_sum;
 }
 
- Vector v_scale(Vector v,double s) {
+ Vector v_scale(Vector v,long double s) {
     v.x=v.x/s;
     v.y=v.y/s;
     v.z=v.z/s;

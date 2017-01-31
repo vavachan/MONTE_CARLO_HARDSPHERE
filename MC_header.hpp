@@ -1,3 +1,5 @@
+#ifndef MC_HEADER_INCLUDED_H
+#define MC_HEADER_INCLUDED_H
 #include<iostream>
 #include<math.h>
 #include<stdlib.h>
@@ -45,3 +47,4 @@ long Nacc=0,Iter=0;
 long Nacc_v=0,Iter_v=0;
 long nc=80;
 int l=6;
+#endif

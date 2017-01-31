@@ -37,11 +37,10 @@ double pair_correlation(atom* Atoms,int nAtoms,int END,Vector box,double temp,do
             G_R<<(i)*bin_width<<"\t"<<g_r[i]/(counter*nAtoms*omega)*(1./density)<<"\n";
         }
         G_R.close();
-    }
+   }
    int d=R_CUT_HS/bin_width;
    r_lower=d*bin_width;
    r_upper=(d+1)*bin_width;
    omega=prefact*(pow(r_upper,3)-pow(r_lower,3));
    return g_r[d]/(counter*nAtoms*omega)*(1./density);
-    
 }
