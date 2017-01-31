@@ -343,8 +343,8 @@ int main(int argc,char* argv[]) {
         box.x=pow(vol,1.0/3.0)/2.;
         box.y=pow(vol,1.0/3.0)/2.;
         box.z=pow(vol,1.0/3.0)/2.;
-        inipos(Atoms,nAtoms,box);
- //       random_ini(Atoms,nAtoms,box,R_CUT_HS);
+ //       inipos(Atoms,nAtoms,box);
+        random_ini(Atoms,nAtoms,box,R_CUT_HS);
 
     }
     else
@@ -449,7 +449,7 @@ int main(int argc,char* argv[]) {
             vmove(Atoms,nAtoms);
             density=nAtoms/vol;
             // cout<<box.x<<"\n";
-            DENSITY<<i<<"\t"<<density<<"\n";
+            DENSITY<<i<<"\t"<<density<<"\n"<<flush;
         }
         if(bias)
         {
