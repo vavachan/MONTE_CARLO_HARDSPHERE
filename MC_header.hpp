@@ -47,4 +47,5 @@ long Nacc=0,Iter=0;
 long Nacc_v=0,Iter_v=0;
 long nc=80;
 int l=6;
+int nei_up=0;
 #endif

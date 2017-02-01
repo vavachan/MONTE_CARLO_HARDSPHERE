@@ -140,38 +140,13 @@ void mcmove_hardsphere(atom Atoms[],int nAtoms) {
     Vector random_dir;
     atom old_atom;
     old_atom=Atoms[random_integer];
-// dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
-// dr=VWrap(dr,box);
-// rr=v_dot(dr,dr);
-// Atoms[random_integer].dist=rr;
-//  if(Atoms[random_integer].dist>gap)
-//  {
-//      neigh_list_update(Atoms,nAtoms) ;
-//  }
     random_dir.x=uni_d(rng)-0.5;
     random_dir.y=uni_d(rng)-0.5;
     random_dir.z=uni_d(rng)-0.5;
 
     Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,JUM);
 
-//  dr=v_sub(Atoms[random_integer].pos,old_atom.pos);
-//  dr=VWrap(dr,box);
-//  rr=v_dot(dr,dr);
-//  r=sqrt(rr);
-//  Atoms[random_integer].dist+=r;
-//  if(Atoms[random_integer].dist>gap)
-//  {
-//      neigh_list_update(Atoms,nAtoms) ;
-//  }
-
-//    flag=verlet_list_HS(Atoms,nAtoms,random_integer);
     flag=hard_sphere(Atoms,nAtoms,random_integer);
-    if(flag!=hard_sphere(Atoms,nAtoms,random_integer))
-    {
-        cout<<"\n\n\nouch\n\n\n\n";
-        exit(0);
-
-    }
     Iter++;
     if(flag)
     {
@@ -195,12 +170,9 @@ void mcmove_ver_hardsphere(atom Atoms[],int nAtoms) {
     Vector random_dir;
     atom old_atom;
     old_atom=Atoms[random_integer];
-// dr=v_sub(Atoms[random_integer].pos,Atoms[random_integer].old_pos);
-// dr=VWrap(dr,box);
-// rr=v_dot(dr,dr);
-// Atoms[random_integer].dist=rr;
     if(Atoms[random_integer].dist>gap)
     {
+	nei_up+=1;
         neigh_list_update(Atoms,nAtoms) ;
     }
     random_dir.x=uni_d(rng)-0.5;
@@ -216,24 +188,16 @@ void mcmove_ver_hardsphere(atom Atoms[],int nAtoms) {
     dr.y=(dr.y-(twob*lround(dr.y/twob)));
     dr.z=(dr.z-(twob*lround(dr.z/twob)));
     rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
-//  dr=v_sub(Atoms[random_integer].pos,old_atom.pos);
-//  dr=VWrap(dr,box);
-//  rr=v_dot(dr,dr);
     r=sqrt(rr);
+
     Atoms[random_integer].dist+=r;
+
     if(Atoms[random_integer].dist>gap)
     {
+	nei_up+=1;
         neigh_list_update(Atoms,nAtoms) ;
     }
-
     flag=verlet_list_HS(Atoms,nAtoms,random_integer);
-//    flag=hard_sphere(Atoms,nAtoms,random_integer);
-    if(flag!=hard_sphere(Atoms,nAtoms,random_integer))
-    {
-        cout<<"\n\n\nouch\n\n\n\n";
-        exit(0);
-
-    }
     Iter++;
     if(flag)
     {
@@ -241,7 +205,7 @@ void mcmove_ver_hardsphere(atom Atoms[],int nAtoms) {
         return;
     }
     else
-    {   //   Atoms[random_integer].pos=v_Sadd(Atoms[random_integer].pos,random_dir,-JUM);
+    {     
         Atoms[random_integer]=old_atom;
         return;
     }
@@ -323,7 +287,7 @@ int move_accept(long nn,long no,long nc,int flag) {
             return 1;
     }
     else {
-        P=exp(-1.0/temp*lambda*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
+        P=exp(-1.0/temp*(lambda/2.0)*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
         r=uni_d(rng);
         if(P>1)
         {
@@ -441,15 +405,16 @@ int main(int argc,char* argv[]) {
     int END=0;
     int rand=0;
     char buffer[64];
-    snprintf(buffer,sizeof(char)*32,"OUT/density_%f_%f.dat",float(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/density_%d_%f.dat",int(nAtoms),Press);
     std::ofstream DENSITY(buffer);
     cout<<"nc:"<<nc<<"\n";
-    snprintf(buffer,sizeof(char)*32,"OUT/cluster_%f_%f.dat",float(nc),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/cluster_%d_%f.dat",int(nc),Press);
     std::ofstream CS(buffer);
-//   n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
+	    clock_t begin=clock();
+ //   n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
     cout<<"n="<<n<<"\n";
     int flag=0;
-    snprintf(buffer,sizeof(char)*64,"OUT/Histogram_%f_%f.dat",float(nc),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/Histogram_%d_%d_%f.dat",int(nAtoms),int(nc),Press);
     atom* old_Atoms;
     old_Atoms = new (nothrow) atom[nAtoms];
     int break_point=0;
@@ -457,7 +422,8 @@ int main(int argc,char* argv[]) {
         cout<<"Memory Allocation Failed\n";
         return 0;
     }
-    clock_t begin=clock();
+    nei_up=0;
+    int N_iter=0;
 //#####################################################################################################################################3
     for(int i=0; i<EqN; i++) {
 
@@ -487,25 +453,15 @@ int main(int argc,char* argv[]) {
             Nacc_v=0;
             Iter_v=0;
         }
-        //  if()
-        //  {
-        //      if(Nacc*1.0/Iter<0.5)
-        //          JUM=JUM*0.95;
-        //      else
-        //          JUM=JUM*1.05;
-        //      if(Nacc_v*1.0/Iter_v<0.5)
-        //          dlnV=dlnV*0.95;
-        //      else
-        //          dlnV=dlnV*1.05;
-        //  }
-        std::uniform_int_distribution<int> uni(0,nAtoms);
+        std::uniform_int_distribution<int> uni(0,100);
         rand=uni(rng);
         back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
-        if(rand<nAtoms) {
+        if(rand<80) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
             {
-                //        mcmove_hardsphere(Atoms,nAtoms);
-                mcmove_ver_hardsphere(Atoms,nAtoms);
+    //                   mcmove_hardsphere(Atoms,nAtoms);
+               mcmove_ver_hardsphere(Atoms,nAtoms);
+		N_iter++;
             }
         }
         else {
@@ -518,23 +474,25 @@ int main(int argc,char* argv[]) {
         {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
 //	    if(fmod(i,1000)==0)
-            CS<<i<<"\t"<<n<<"\n";
+            CS<<i<<"\t"<<n<<"\n"<<flush;
         }
         //    cout<<i<<"\n";
         //    reset(Atoms,nAtoms);
-        //    n=largest_cluster(Atoms,nAtoms,l,box);
-        //      cout<<i<<"\t"<<n<<"\n";
+           //  cout<<i<<"\t"<<n<<"\n";
         //      reset(Atoms,nAtoms);
+	
         if(fmod(i,1000)==0)
         {   cout<<i*1.0/EqN<<"\n";
-            // if(bias) {
-            //   std::ofstream HIS(buffer);
-            //   for(int n=0; n<nAtoms; n++)
-            //   {
-            //       HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n";
-            //   }
-            //   HIS.close();
-            // }
+//	    n=largest_cluster(Atoms,nAtoms,l,box);
+//	    cout<<i<<"\t"<<n<<"\n";
+          // if(bias) {
+          //     std::ofstream HIS(buffer);
+          //     for(int n=0; n<nAtoms; n++)
+          //     {
+          //         HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n"<<flush;
+          //     }
+          //     HIS.close();
+          //   }
             print_pos(Atoms,nAtoms);
         }
         if(bias) {
@@ -549,20 +507,21 @@ int main(int argc,char* argv[]) {
     if(!bias)
         break_point=EqN;
     cout<<"eq completed\n";
+    cout<<nei_up*1.0/(N_iter)<<"\n";
     Nacc=0;
     Iter=0;
     Nacc_v=0;
     Iter_v=0;
     double den_sum=0;
     for(int i=0; i<N; i++) {
-        std::uniform_int_distribution<int> uni(0,nAtoms);
+        std::uniform_int_distribution<int> uni(0,100);
         rand=uni(rng);
 //   	back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
-        if(rand<nAtoms) {
+        if(rand<80) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
             {
-                mcmove_ver_hardsphere(Atoms,nAtoms);
-                //      mcmove_hardsphere(Atoms,nAtoms);
+              mcmove_ver_hardsphere(Atoms,nAtoms);
+         //            mcmove_hardsphere(Atoms,nAtoms);
             }
         }
         else {
@@ -586,7 +545,7 @@ int main(int argc,char* argv[]) {
                 std::ofstream HIS(buffer);
                 for(int n=0; n<nAtoms; n++)
                 {
-                    HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n";
+                    HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
                 }
                 HIS.close();
                 print_pos(Atoms,nAtoms);
@@ -596,11 +555,11 @@ int main(int argc,char* argv[]) {
 //      	cout<<i<<"\t"<<g_d<<"\n";
         }
     }
+    cout<<temp*k_b*(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<den_sum/N<<"\t"<<(M_PI/6.0)*den_sum/N<<"\t"<<g_d<<"\n";
+    cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
     clock_t end =clock();
     double elapsed_time= double (end-begin)/CLOCKS_PER_SEC;
     cout<<elapsed_time/60.<<"\n";
-    cout<<temp*k_b*(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<den_sum/N<<"\t"<<(M_PI/6.0)*den_sum/N<<"\t"<<g_d<<"\n";
-    cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
     delete[] Atoms;
     delete[] HISTOGRAM;
     delete[] old_Atoms;
