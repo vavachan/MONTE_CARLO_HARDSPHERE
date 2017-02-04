@@ -1,6 +1,6 @@
-OBJECTS = bop.o g_r.o ini_pos.o vector.o hard_sphere.o atom.o
+OBJECTS = hard_sphere.o bop.o g_r.o ini_pos.o vector.o  atom.o
 a.out : $(OBJECTS) 
-	g++ -g -o z.out $(OBJECTS) 
+	g++ -o z.out $(OBJECTS) 
 hard_sphere.o : MC_header.hpp ini_pos.hpp g_r.hpp
 bop.o : atom.hpp bop.hpp
 g_r.o : g_r.hpp atom.hpp

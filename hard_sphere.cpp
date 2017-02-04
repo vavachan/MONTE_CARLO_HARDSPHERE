@@ -172,7 +172,7 @@ void mcmove_ver_hardsphere(atom Atoms[],int nAtoms) {
     old_atom=Atoms[random_integer];
     if(Atoms[random_integer].dist>gap)
     {
-	nei_up+=1;
+        nei_up+=1;
         neigh_list_update(Atoms,nAtoms) ;
     }
     random_dir.x=uni_d(rng)-0.5;
@@ -194,7 +194,7 @@ void mcmove_ver_hardsphere(atom Atoms[],int nAtoms) {
 
     if(Atoms[random_integer].dist>gap)
     {
-	nei_up+=1;
+        nei_up+=1;
         neigh_list_update(Atoms,nAtoms) ;
     }
     flag=verlet_list_HS(Atoms,nAtoms,random_integer);
@@ -205,7 +205,7 @@ void mcmove_ver_hardsphere(atom Atoms[],int nAtoms) {
         return;
     }
     else
-    {     
+    {
         Atoms[random_integer]=old_atom;
         return;
     }
@@ -230,6 +230,14 @@ void reset(atom Atoms[],int nAtoms)
         Atoms[n].cluster_index=-1;
         Atoms[n].connections=0;
         Atoms[n].reset();
+    }
+}
+void close_reset(atom Atoms[],int nAtoms)
+{
+    for(int n=0; n<nAtoms; n++) {
+        Atoms[n].cluster_index=-1;
+        Atoms[n].connections=0;
+        Atoms[n].close_reset();
     }
 }
 void vmove(atom Atoms[],int nAtoms) {
@@ -278,37 +286,38 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc,int flag) {
     double P=0;
-    double lambda=0.1;
+    double lambda=0.2;
     double r;
-    if(flag) {
-        if(abs(nn-nc)>5)
-            return 0;
-        else
-            return 1;
+// if(flag) {
+//     if(abs(nn-nc)>5)
+//         return 0;
+//     else
+//         return 1;
+// }
+//   else {
+    P=exp(-1.0/temp*(lambda/2.0)*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
+    r=uni_d(rng);
+    if(P>1)
+    {
+        return 1;
     }
-    else {
-        P=exp(-1.0/temp*(lambda/2.0)*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
-        r=uni_d(rng);
-        if(P>1)
-        {
-            return 1;
-        }
-        else if (r<P)
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
+    else if (r<P)
+    {
+        return 1;
     }
+    else
+    {
+        return 0;
+    }
+    // }
 }
 long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[]) {
     long nn=0;
-    reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
+    close_reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
 
+ //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
-//    cout<<nn<<"\t"<<no<<"\n";
+ ///  cout<<nn<<"\t"<<no<<"\n";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
@@ -410,9 +419,6 @@ int main(int argc,char* argv[]) {
     cout<<"nc:"<<nc<<"\n";
     snprintf(buffer,sizeof(char)*64,"OUT/cluster_%d_%f.dat",int(nc),Press);
     std::ofstream CS(buffer);
-	    clock_t begin=clock();
- //   n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
-    cout<<"n="<<n<<"\n";
     int flag=0;
     snprintf(buffer,sizeof(char)*64,"OUT/Histogram_%d_%d_%f.dat",int(nAtoms),int(nc),Press);
     atom* old_Atoms;
@@ -424,9 +430,15 @@ int main(int argc,char* argv[]) {
     }
     nei_up=0;
     int N_iter=0;
+    close_reset(Atoms,nAtoms);
+    clock_t begin=clock();
+    n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
+    cout<<"n="<<n<<"\n";
 //#####################################################################################################################################3
     for(int i=0; i<EqN; i++) {
-
+        // reset(Atoms,nAtoms);
+        // n=largest_cluster(Atoms,nAtoms,l,box);
+        // cout<<i<<"\t"<<n<<"\n";
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -440,7 +452,7 @@ int main(int argc,char* argv[]) {
             Nacc=0;
             Iter=0;
         }
-        if(fmod(i,10*nAtoms)==0) {
+        if(fmod(i,20*nAtoms)==0) {
             if(Nacc_v*(1.0/Iter_v)<0.5)
             {
                 dlnV=dlnV*0.95;
@@ -449,19 +461,18 @@ int main(int argc,char* argv[]) {
             {
                 dlnV=dlnV*1.05;
             }
-            //cout<<i<<"\t"<<Nacc_v*(1.0/Iter_v)<<"\t"<<dlnV<<"\n";
             Nacc_v=0;
             Iter_v=0;
         }
-        std::uniform_int_distribution<int> uni(0,100);
+        std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
         back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
-        if(rand<80) {
+        if(rand<nAtoms) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
             {
-    //                   mcmove_hardsphere(Atoms,nAtoms);
-               mcmove_ver_hardsphere(Atoms,nAtoms);
-		N_iter++;
+//              mcmove_hardsphere(Atoms,nAtoms);
+                mcmove_ver_hardsphere(Atoms,nAtoms);
+                N_iter++;
             }
         }
         else {
@@ -470,29 +481,27 @@ int main(int argc,char* argv[]) {
             // cout<<box.x<<"\n";
             DENSITY<<i<<"\t"<<density<<"\n"<<flush;
         }
-        if(bias)
+        if(bias)// and (fmod(i,20)==0))
         {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
+            // HISTOGRAM[n]+=1;
 //	    if(fmod(i,1000)==0)
             CS<<i<<"\t"<<n<<"\n"<<flush;
         }
         //    cout<<i<<"\n";
-        //    reset(Atoms,nAtoms);
-           //  cout<<i<<"\t"<<n<<"\n";
+        //  cout<<i<<"\t"<<n<<"\n";
         //      reset(Atoms,nAtoms);
-	
+
         if(fmod(i,1000)==0)
         {   cout<<i*1.0/EqN<<"\n";
-//	    n=largest_cluster(Atoms,nAtoms,l,box);
-//	    cout<<i<<"\t"<<n<<"\n";
-          // if(bias) {
-          //     std::ofstream HIS(buffer);
-          //     for(int n=0; n<nAtoms; n++)
-          //     {
-          //         HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n"<<flush;
-          //     }
-          //     HIS.close();
-          //   }
+            // if(bias) {
+            //     std::ofstream HIS(buffer);
+            //     for(int n=0; n<nAtoms; n++)
+            //     {
+            //         HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n"<<flush;
+            //     }
+            //     HIS.close();
+            //   }
             print_pos(Atoms,nAtoms);
         }
         if(bias) {
@@ -514,14 +523,39 @@ int main(int argc,char* argv[]) {
     Iter_v=0;
     double den_sum=0;
     for(int i=0; i<N; i++) {
-        std::uniform_int_distribution<int> uni(0,100);
+        if(fmod(i,5)==0) {
+            if(Nacc*(1.0/Iter)<0.5)
+            {
+                JUM=JUM*0.95;
+            }
+            else
+            {
+                JUM=JUM*1.05;
+            }
+            // cout<<i<<"\t"<<JUM<<"\n";
+            Nacc=0;
+            Iter=0;
+        }
+        if(fmod(i,20*nAtoms)==0) {
+            if(Nacc_v*(1.0/Iter_v)<0.5)
+            {
+                dlnV=dlnV*0.95;
+            }
+            else
+            {
+                dlnV=dlnV*1.05;
+            }
+            Nacc_v=0;
+            Iter_v=0;
+        }
+        std::uniform_int_distribution<int> uni(0,nAtoms);
         rand=uni(rng);
 //   	back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
-        if(rand<80) {
+        if(rand<nAtoms) {
             for(int n=0; n<nAtoms; n++)     //MC_Sweep
             {
-              mcmove_ver_hardsphere(Atoms,nAtoms);
-         //            mcmove_hardsphere(Atoms,nAtoms);
+                mcmove_ver_hardsphere(Atoms,nAtoms);
+//                  mcmove_hardsphere(Atoms,nAtoms);
             }
         }
         else {
@@ -529,12 +563,12 @@ int main(int argc,char* argv[]) {
             density=nAtoms/vol;
             DENSITY<<i+break_point<<"\t"<<density<<"\n"<<flush;
         }
-        if(bias) {
+        if(bias and (fmod(i,10)==0)) {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
             if(flag)
                 HISTOGRAM[n]++;
 //	    if(fmod(i,1000)==0)
-            CS<<i+break_point<<"\t"<<n<<"\n";
+            CS<<i+break_point<<"\t"<<n<<"\n"<<flush;
         }
         den_sum+=density;
         if(fmod(i,100)==0)

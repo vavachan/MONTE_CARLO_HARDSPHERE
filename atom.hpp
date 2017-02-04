@@ -17,5 +17,6 @@ public:
     void update_neighbour(int neigh);
     void close_update_neighbour(int neigh);
     void reset();
+    void close_reset();
 };
 #endif

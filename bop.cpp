@@ -360,7 +360,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
                 Atoms[i].close_update_neighbour(Atoms[i].neigh_list[j]);
 	//	cout<<i<<"\t"<<Atoms[i].neigh_list[j]<<"\n";
 //		cout<<i<<"\t"<<j<<"\n";
-                if(check_bond(i,j,Atoms,nAtoms,l,box,Q_local_r[i],Q_local_i[i],Q_local_r[j],Q_local_i[j])) {
+                if(check_bond(i,Atoms[i].neigh_list[j],Atoms,nAtoms,l,box,Q_local_r[i],Q_local_i[i],Q_local_r[Atoms[i].neigh_list[j]],Q_local_i[Atoms[i].neigh_list[j]])) {
                     Atoms[i].connections+=1;
                     //      Atoms[j].connections+=1;
                 }
