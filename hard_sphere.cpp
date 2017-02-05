@@ -112,19 +112,36 @@ int check_overlap(atom Atoms[],int nAtoms)
 {
     Vector dr;
     double rr,r;
-    for(int i=0; i<nAtoms-1; i++) {
-        for(int j=i+1; j<nAtoms; j++)
-        {
-            dr=v_sub(Atoms[i].pos,Atoms[j].pos);
-            dr=VWrap(dr,box);
-            rr=v_dot(dr,dr);
-            r=sqrt(rr);
-            if(r<R_CUT_HS) {
-                //  cout<<i<<"\t"<<j<<"\t"<<rr<<"\n";
+    double twob=2*box.x;
+    for(int i=0; i<nAtoms; i++) {
+
+        for(int j=0; j<Atoms[i].neighbours; j++) {
+            dr.x=Atoms[i].pos.x-Atoms[Atoms[i].neigh_list[j]].pos.x;
+            dr.y=Atoms[i].pos.y-Atoms[Atoms[i].neigh_list[j]].pos.y;
+            dr.z=Atoms[i].pos.z-Atoms[Atoms[i].neigh_list[j]].pos.z;
+            dr.x=(dr.x-(twob*lround(dr.x/twob)));
+            dr.y=(dr.y-(twob*lround(dr.y/twob)));
+            dr.z=(dr.z-(twob*lround(dr.z/twob)));
+            rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
+            //  dr=v_sub(Atoms[random_integer].pos,Atoms[Atoms[random_integer].neigh_list[i]].pos);
+            //  dr=VWrap(dr,box);
+            //  rr=v_dot(dr,dr);
+            //          cout<<random_integer<<"\t"<<Atoms[random_integer].neigh_list[i]<<"\t"<<rr<<"\n";
+            if(rr<R_CUT_HS_sq) {
                 return 0;
             }
-
         }
+        //  for(int j=i+1; j<nAtoms; j++)
+        //  {
+        //      dr=v_sub(Atoms[i].pos,Atoms[j].pos);
+        //      dr=VWrap(dr,box);
+        //      rr=v_dot(dr,dr);
+        //      r=sqrt(rr);
+        //      if(r<R_CUT_HS) {
+        //          return 0;
+        //      }
+
+        //  }
 
     }
     return 1;
@@ -297,6 +314,7 @@ int move_accept(long nn,long no,long nc,int flag) {
 //   else {
     P=exp(-1.0/temp*(lambda/2.0)*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
     r=uni_d(rng);
+    cout<<r<<"\t"<<P<<"\n";
     if(P>1)
     {
         return 1;
@@ -315,9 +333,10 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
     long nn=0;
     close_reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
 
- //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
+//   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
   //  cout<<nn<<"\t"<<no<<"\n";
+//    cout<<nn<<"\t"<<no<<"\n";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
@@ -469,22 +488,24 @@ int main(int argc,char* argv[]) {
             Nacc_v=0;
             Iter_v=0;
         }
-        std::uniform_int_distribution<int> uni(0,nAtoms);
-        rand=uni(rng);
         back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
-        if(rand<nAtoms) {
-            for(int n=0; n<nAtoms; n++)     //MC_Sweep
-            {
+        for(int n=0; n<nAtoms; n++)     //MC_Sweep
+        {
+            std::uniform_int_distribution<int> uni(0,nAtoms);
+            rand=uni(rng);
+            if(rand<nAtoms) {
+                {
 //              mcmove_hardsphere(Atoms,nAtoms);
-                mcmove_ver_hardsphere(Atoms,nAtoms);
-                N_iter++;
+                    mcmove_ver_hardsphere(Atoms,nAtoms);
+                    N_iter++;
+                }
             }
-        }
-        else {
-            vmove(Atoms,nAtoms);
-            density=nAtoms/vol;
-            // cout<<box.x<<"\n";
-            DENSITY<<i<<"\t"<<density<<"\n"<<flush;
+            else {
+                vmove(Atoms,nAtoms);
+                density=nAtoms/vol;
+                // cout<<box.x<<"\n";
+                DENSITY<<i<<"\t"<<density<<"\n"<<flush;
+            }
         }
         if(bias)// and (fmod(i,20)==0))
         {
@@ -493,6 +514,7 @@ int main(int argc,char* argv[]) {
 //	    if(fmod(i,1000)==0)
             CS<<i<<"\t"<<n<<"\n"<<flush;
         }
+
         //    cout<<i<<"\n";
         //  cout<<i<<"\t"<<n<<"\n";
         //      reset(Atoms,nAtoms);
@@ -553,20 +575,23 @@ int main(int argc,char* argv[]) {
             Nacc_v=0;
             Iter_v=0;
         }
-        std::uniform_int_distribution<int> uni(0,nAtoms);
-        rand=uni(rng);
-//   	back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
-        if(rand<nAtoms) {
-            for(int n=0; n<nAtoms; n++)     //MC_Sweep
-            {
-                mcmove_ver_hardsphere(Atoms,nAtoms);
-//                  mcmove_hardsphere(Atoms,nAtoms);
+        for(int n=0; n<nAtoms; n++)     //MC_Sweep
+        {
+            std::uniform_int_distribution<int> uni(0,nAtoms);
+            rand=uni(rng);
+            if(rand<nAtoms) {
+                {
+//              mcmove_hardsphere(Atoms,nAtoms);
+                    mcmove_ver_hardsphere(Atoms,nAtoms);
+                    N_iter++;
+                }
             }
-        }
-        else {
-            vmove(Atoms,nAtoms);
-            density=nAtoms/vol;
-            DENSITY<<i+break_point<<"\t"<<density<<"\n"<<flush;
+            else {
+                vmove(Atoms,nAtoms);
+                density=nAtoms/vol;
+                // cout<<box.x<<"\n";
+                DENSITY<<i<<"\t"<<density<<"\n"<<flush;
+            }
         }
         if(bias and (fmod(i,10)==0)) {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
