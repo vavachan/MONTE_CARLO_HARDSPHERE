@@ -7,7 +7,7 @@ using namespace std;
 
 void print_pos (atom Atoms[],int nAtoms) {
     char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/config_%f_%f_%f.dat",temp,float(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/config_%f_%d_%f_%d.dat",temp,nAtoms,Press,int(nc));
     std::ofstream POSITION(buffer);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
@@ -286,7 +286,7 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc,int flag) {
     double P=0;
-    double lambda=0.2;
+    double lambda=0.15;
     double r;
 // if(flag) {
 //     if(abs(nn-nc)>5)
@@ -317,7 +317,7 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
 
  //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
- ///  cout<<nn<<"\t"<<no<<"\n";
+  //  cout<<nn<<"\t"<<no<<"\n";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
@@ -396,28 +396,33 @@ int main(int argc,char* argv[]) {
     {
         HISTOGRAM[i]=0;
     }
-    cin>>N;
-    cin>>temp;
-    cin>>Press;
-    cin>>nc;
-    double EqN;
-    cin>>EqN;
+  //cin>>N;
+  //cin>>temp;
+  //cin>>Press;
+  //cin>>nc;
+    N=100000;
+    temp=1.0;
+    Press=16.0;
+    nc=atoi(argv[4]);
+    double EqN=100000;
     vol=2*box.x*2*box.y*2*box.z;
-    cout<<"no of Atoms:"<<nAtoms<<"\n";
-    cout<<"N:"<<N<<"\n";
-    cout<<"EqN:"<<EqN<<"\n";
-    cout<<"Pressure:"<<Press<<"\n";
-    cout<<"temp:"<<temp<<"\n";
-    cout<<"box:"<<box.x<<"\n";
-    cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z)<<"\n";
-    cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n";
+    char buffer[64];
+    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%f.dat",int(nAtoms),int(nc),Press);//_%d_%f.dat",int(nAtoms),Press);
+    freopen(buffer,"w",stdout);
+    cout<<"no of Atoms:"<<nAtoms<<"\n"<<flush;
+    cout<<"N:"<<N<<"\n"<<flush;
+    cout<<"EqN:"<<EqN<<"\n"<<flush;
+    cout<<"Pressure:"<<Press<<"\n"<<flush;
+    cout<<"temp:"<<temp<<"\n"<<flush;
+    cout<<"box:"<<box.x<<"\n"<<flush;
+    cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z)<<"\n"<<flush;
+    cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n"<<flush;
     int END=0;
     int rand=0;
-    char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/density_%d_%f.dat",int(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/density_%d_%d_%f.dat",int(nAtoms),int(nc),Press);//_%d_%f.dat",int(nAtoms),Press);
     std::ofstream DENSITY(buffer);
-    cout<<"nc:"<<nc<<"\n";
-    snprintf(buffer,sizeof(char)*64,"OUT/cluster_%d_%f.dat",int(nc),Press);
+    cout<<"nc:"<<nc<<"\n"<<flush;
+    snprintf(buffer,sizeof(char)*64,"OUT/cluster_%d_%d_%f.dat",int(nAtoms),int(nc),Press);//_%d_%f.dat",int(nc),Press);
     std::ofstream CS(buffer);
     int flag=0;
     snprintf(buffer,sizeof(char)*64,"OUT/Histogram_%d_%d_%f.dat",int(nAtoms),int(nc),Press);
@@ -433,7 +438,7 @@ int main(int argc,char* argv[]) {
     close_reset(Atoms,nAtoms);
     clock_t begin=clock();
     n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
-    cout<<"n="<<n<<"\n";
+    cout<<"n="<<n<<"\n"<<flush;
 //#####################################################################################################################################3
     for(int i=0; i<EqN; i++) {
         // reset(Atoms,nAtoms);
@@ -493,7 +498,7 @@ int main(int argc,char* argv[]) {
         //      reset(Atoms,nAtoms);
 
         if(fmod(i,1000)==0)
-        {   cout<<i*1.0/EqN<<"\n";
+        {   cout<<i*1.0/EqN<<"\n"<<flush;
             // if(bias) {
             //     std::ofstream HIS(buffer);
             //     for(int n=0; n<nAtoms; n++)
@@ -574,7 +579,7 @@ int main(int argc,char* argv[]) {
         if(fmod(i,100)==0)
         {
             if(fmod(i,1000)==0)
-            {   cout<<i*1.0/N<<"\n";
+            {   cout<<i*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
                 std::ofstream HIS(buffer);
                 for(int n=0; n<nAtoms; n++)

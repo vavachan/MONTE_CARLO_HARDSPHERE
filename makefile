@@ -1,4 +1,5 @@
 OBJECTS = hard_sphere.o bop.o g_r.o ini_pos.o vector.o  atom.o
+CXXFLAGS   = -std=c++11 -isystem /home/group/boost/
 a.out : $(OBJECTS) 
 	g++ -o z.out $(OBJECTS) 
 hard_sphere.o : MC_header.hpp ini_pos.hpp g_r.hpp
