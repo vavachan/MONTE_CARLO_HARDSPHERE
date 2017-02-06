@@ -421,7 +421,7 @@ int main(int argc,char* argv[]) {
   //cin>>nc;
     N=100000;
     temp=1.0;
-    Press=16.0;
+    Press=18.0;
     nc=atoi(argv[4]);
     double EqN=100000;
     vol=2*box.x*2*box.y*2*box.z;
@@ -488,7 +488,6 @@ int main(int argc,char* argv[]) {
             Nacc_v=0;
             Iter_v=0;
         }
-        back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
         for(int n=0; n<nAtoms; n++)     //MC_Sweep
         {
             std::uniform_int_distribution<int> uni(0,nAtoms);
@@ -509,6 +508,7 @@ int main(int argc,char* argv[]) {
         }
         if(bias)// and (fmod(i,20)==0))
         {
+            back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
             // HISTOGRAM[n]+=1;
 //	    if(fmod(i,1000)==0)
@@ -594,6 +594,7 @@ int main(int argc,char* argv[]) {
             }
         }
         if(bias and (fmod(i,10)==0)) {
+            back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
             if(flag)
                 HISTOGRAM[n]++;
