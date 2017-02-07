@@ -5,7 +5,7 @@ using namespace std;
 #include<math.h>
 #include </home/varghese/Academitialismational/PHD1stsem/Monte_Carlo_fluid/boost_1_62_0/boost/math/special_functions/spherical_harmonic.hpp>
 double shell_one=1.5;
-double xi=10;
+double xi=6;
 double order_para_global(atom Atoms[],int nAtoms,int l,Vector box) {
     Vector r_ij;
     double rr;
@@ -304,6 +304,10 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
                 Nb[i]=Nb[i]+1;
                 NB=NB+1;
                 THETA=acos(r_ij.z/r);
+		if(r_ij.z/r>1.)
+			THETA=0;
+		if(r_ij.z/r<-1.)
+			THETA=M_PI;
                 if(r_ij.x == 0. and r_ij.y == 0.) {
                     PHI=0;
                 }
@@ -312,6 +316,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
                     if(PHI<0)
                         PHI=2*M_PI+PHI;
                 }
+		//cout<<i<<"\t"<<Atoms[i].neigh_list[j]<<"\t"<<PHI<<"\t"<<THETA<<"\t"<<acos(r_ij.z/r)<<"\t"<<r_ij.z/r<<"\n";
                 for(int m=0; m<2*l+1; m++) {
                     Q_Lj_i[m]=Q_Lj_i[m]+boost::math::spherical_harmonic_i <double , double > (l,m-l,THETA, PHI);
                     Q_Lj_r[m]=Q_Lj_r[m]+boost::math::spherical_harmonic_r <double , double > (l,m-l,THETA, PHI);
@@ -320,9 +325,11 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
         }
 
         double Q_Li=0;
+	//cout<<i<<"\t";
         for(int m=0; m<2*l+1; m++) {
             Q_Li_i[m]=Q_Lj_i[m]/Nb[i];
             Q_Li_r[m]=Q_Lj_r[m]/Nb[i];
+	   // cout<<Q_Lj_i[m]<<"\t"<<Q_Lj_r[m]<<"\n";
             Q_Li=Q_Li+(Q_Li_i[m]*Q_Li_i[m]+Q_Li_r[m]*Q_Li_r[m]);
             Q_local_i[i][m]=Q_Li_i[m];
             Q_local_r[i][m]=Q_Li_r[m];
@@ -330,6 +337,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
         Q_Li=4*M_PI/(2*l+1)*Q_Li;
         Q_local[i]=sqrt(Q_Li);
         Q_L=Q_L+sqrt(Q_Li);
+//	cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
     }
     for(int n=0; n<nAtoms; n++) {
         Nc[n]=0;
@@ -338,7 +346,6 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
 //      cout<<i<<"\t"<<Atoms[i].cluster_index<<"\n";
 //  }
     for(int i=0; i<nAtoms; i++) {
-
         for(int j=0; j<Atoms[i].neighbours; j++) {
             r_ij.x=Atoms[i].pos.x-Atoms[Atoms[i].neigh_list[j]].pos.x;
             r_ij.y=Atoms[i].pos.y-Atoms[Atoms[i].neigh_list[j]].pos.y;
@@ -368,8 +375,8 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
         }
     }
     for(int i=0; i<nAtoms; i++) {
-//	cout<<i<<"\t"<<Atoms[i].connections<<"\n";
-//                  cout<<i<<"\t"<<Q_local[i]<<"\t"<<Nb[i]<<"\n";
+////////cout<<i<<"\t"<<Atoms[i].connections<<"\t"<<Atoms[i].close_neighbours<<"\n";
+////////cout<<i<<"\t"<<Q_local[i]<<"\t"<<Nb[i]<<"\n";
           if(Atoms[i].connections>xi) {
 //        if(Nb[i]==4 and Q_local[i] >= 0.6) {
             Atoms[i].cluster_index=i;

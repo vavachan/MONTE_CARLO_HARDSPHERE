@@ -18,6 +18,7 @@ const double unit_time=pow(m*sigma*sigma/epsilon,0.5);
 double temp;
 double JUM=0.05;
 Vector box;
+Vector old_box;
 double density=0;
 long nAtoms;
 std::ofstream MSD("position_x.dat");
