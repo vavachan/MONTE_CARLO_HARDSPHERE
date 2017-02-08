@@ -5,12 +5,13 @@ using namespace std;
 #include "bop.hpp"
 #include <cstdlib>
 
-void print_pos (atom Atoms[],int nAtoms) {
+void print_pos (atom Atoms[],int nAtoms,int i) {
     char buffer[64];
     snprintf(buffer,sizeof(char)*64,"OUT/config_%f_%f_%f.dat",temp,float(nAtoms),Press);
     std::ofstream POSITION(buffer);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
+    POSITION<<i<<"\n";
     Vector dr;
     for (int i=0; i<nAtoms; i++)
     {
@@ -23,7 +24,6 @@ int neigh_list_update(atom Atoms[],int nAtoms) {
     Vector dr;
     long double rr;
     long double twob=2*box.x;
-//    cout<<"update\n";
     for(int n=0; n<nAtoms; n++) {
         Atoms[n].reset();
         Atoms[n].old_pos=Atoms[n].pos;
@@ -339,7 +339,7 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
 
 //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
-    cout<<nn<<"\t"<<no<<"\n";
+    //cout<<nn<<"\t"<<no<<"\n";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
@@ -360,6 +360,7 @@ int main(int argc,char* argv[]) {
     atom* Atoms;
     bool restart;
     bool bias;
+    int START=0;
 //##############################################################################################################################
     std::string action(argv[1]);
     if (action == "restart") {
@@ -396,6 +397,7 @@ int main(int argc,char* argv[]) {
     {   std::ifstream infile(argv[3]);
         infile>>nAtoms;
         infile>>box.x;
+        infile>>START;
         box.z=box.y=box.x;
         Atoms = new (nothrow) atom[nAtoms];
         long double a,b,c,d;				//uncomment the
@@ -460,8 +462,10 @@ int main(int argc,char* argv[]) {
     n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
     cout<<"n="<<n<<"\n"<<flush;
     int n1;
+    Vector dr;
 //#####################################################################################################################################3
-    for(int i=0; i<EqN; i++) {
+    back_up(Atoms,old_Atoms,nAtoms);
+    for(int i=START; i<(START+EqN); i++) {
 ////////    if(!check_overlap(Atoms,nAtoms))
 ////////		  cout<<i<<"\t"<<"whoops\n";
 //	cout<<n<<"\n";
@@ -507,6 +511,7 @@ int main(int argc,char* argv[]) {
             rand=uni(rng);
             if(rand<nAtoms) {
                 {
+//			cout<<i<<"\t"<<n<<"\t"<<rand<<"\n";
 //              mcmove_hardsphere(Atoms,nAtoms);
                     mcmove_ver_hardsphere(Atoms,nAtoms);
                     N_iter++;
@@ -519,6 +524,11 @@ int main(int argc,char* argv[]) {
                 DENSITY<<i<<"\t"<<density<<"\n"<<flush;
             }
         }
+//  for (int i=0; i<nAtoms; i++)
+//  {
+//      dr=VWrap(Atoms[i].pos,box);
+//      cout<<i<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
+//  }
     //  for(int n=0;n<nAtoms;n++)
     //  {
     //  	;
@@ -529,6 +539,7 @@ int main(int argc,char* argv[]) {
         {
 
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
+
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
 	    old_box=box;
             // HISTOGRAM[n]+=1;
@@ -536,12 +547,18 @@ int main(int argc,char* argv[]) {
             CS<<i<<"\t"<<n<<"\n"<<flush;
         }
 
+//  for (int i=0; i<nAtoms; i++)
+//  {
+//      dr=VWrap(old_Atoms[i].pos,box);
+//      cout<<R_CUT_HS/2.0<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
+//  }
         //    cout<<i<<"\n";
         //  cout<<i<<"\t"<<n<<"\n";
         //      reset(Atoms,nAtoms);
 
+        // cout<<i*1.0/EqN<<"\n"<<flush;
         if(fmod(i,1000)==0)
-        {   cout<<i*1.0/EqN<<"\n"<<flush;
+        {   cout<<i*1.0/(START+EqN)<<"\n"<<flush;
             // if(bias) {
             //     std::ofstream HIS(buffer);
             //     for(int n=0; n<nAtoms; n++)
@@ -550,7 +567,7 @@ int main(int argc,char* argv[]) {
             //     }
             //     HIS.close();
             //   }
-            print_pos(Atoms,nAtoms);
+            print_pos(Atoms,nAtoms,i);
         }
         if(bias) {
             if(n==nc) {
@@ -569,6 +586,7 @@ int main(int argc,char* argv[]) {
     Iter=0;
     Nacc_v=0;
     Iter_v=0;
+    int count=0;
     long double den_sum=0;
     for(int i=0; i<N; i++) {
 ////////if(bias and (fmod(i,10)==0)) {
@@ -624,7 +642,11 @@ int main(int argc,char* argv[]) {
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
 	    old_box=box;
             if(flag)
+	    {
                 HISTOGRAM[n]++;
+		count++;
+	//	cout<<i<<"\n";
+	    }
 //	    if(fmod(i,1000)==0)
             CS<<i+break_point<<"\t"<<n<<"\n"<<flush;
         }
@@ -640,13 +662,14 @@ int main(int argc,char* argv[]) {
                     HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
                 }
                 HIS.close();
-                print_pos(Atoms,nAtoms);
+                print_pos(Atoms,nAtoms,i);
             }
             else
                 g_d=pair_correlation(Atoms,nAtoms,0,box,temp,Press);
 //      	cout<<i<<"\t"<<g_d<<"\n";
         }
     }
+    cout<<count<<"\n";
     cout<<temp*k_b*(den_sum/N)*(1+2.*M_PI*(den_sum/N)*pow(R_CUT_HS,3)*g_d/3.0)<<"\t"<<den_sum/N<<"\t"<<(M_PI/6.0)*den_sum/N<<"\t"<<g_d<<"\n";
     cout<<"acceptance ratio\t"<<float(Nacc)/float(Iter)<<"\t"<<float(Nacc_v)/float(Iter_v)<<"\n";
     clock_t end =clock();
