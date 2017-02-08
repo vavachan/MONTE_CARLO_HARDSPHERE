@@ -145,7 +145,7 @@ double order_para_local(atom Atoms[],int nAtoms,int l,Vector box) {
         }
         Q_Li=4*M_PI/(2*l+1)*Q_Li;
         Q_L=Q_L+sqrt(Q_Li);
-        // cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
+        //cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
     }
     delete[] Nb;
     delete[] Q_Li_i;
@@ -285,7 +285,9 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
         //   double Q_Lj_i[100]= {0.0};
         //   double Q_Lj_r[100]= {0.0};
         //
+	//cout<<i<<"\t"<<Atoms[i].neighbours<<"\n";
 
+	//cout<<box.x<<"\n";
         for(int j=0; j<Atoms[i].neighbours; j++) {
             r_ij.x=Atoms[i].pos.x-Atoms[Atoms[i].neigh_list[j]].pos.x;
             r_ij.y=Atoms[i].pos.y-Atoms[Atoms[i].neigh_list[j]].pos.y;
@@ -300,6 +302,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
             //      r_ij=VWrap(r_ij,box);
             //    rr=v_dot(r_ij,r_ij);
             r=sqrt(rr);
+//		cout<<i<<"\t"<<Atoms[i].neigh_list[j]<<"\t"<<PHI<<"\t"<<THETA<<"\t"<<acos(r_ij.z/r)<<"\t"<<r_ij.z/r<<"\n";
             if(r<shell_one) {
                 Nb[i]=Nb[i]+1;
                 NB=NB+1;
@@ -317,6 +320,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
                         PHI=2*M_PI+PHI;
                 }
 		//cout<<i<<"\t"<<Atoms[i].neigh_list[j]<<"\t"<<PHI<<"\t"<<THETA<<"\t"<<acos(r_ij.z/r)<<"\t"<<r_ij.z/r<<"\n";
+
                 for(int m=0; m<2*l+1; m++) {
                     Q_Lj_i[m]=Q_Lj_i[m]+boost::math::spherical_harmonic_i <double , double > (l,m-l,THETA, PHI);
                     Q_Lj_r[m]=Q_Lj_r[m]+boost::math::spherical_harmonic_r <double , double > (l,m-l,THETA, PHI);
