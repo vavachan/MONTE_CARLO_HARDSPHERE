@@ -3,6 +3,7 @@ using namespace std;
 #include<tuple>
 #include<iostream>
 #include<math.h>
+//#include </home/yagyik/boost/boost/math/special_functions/spherical_harmonic.hpp>
 #include </home/varghese/Academitialismational/PHD1stsem/Monte_Carlo_fluid/boost_1_62_0/boost/math/special_functions/spherical_harmonic.hpp>
 double shell_one=1.5;
 double xi=6;
@@ -118,10 +119,15 @@ double order_para_local(atom Atoms[],int nAtoms,int l,Vector box) {
                 r_ij=VWrap(r_ij,box);
                 rr=v_dot(r_ij,r_ij);
                 r=sqrt(rr);
+		cout<<i<<"\t"<<j<<"\t"<<r<<"\n";
                 if(r<shell_one) {
                     Nb[i]=Nb[i]+1;
                     NB=NB+1;
                     THETA=acos(r_ij.z/r);
+			if(r_ij.z/r>1.)
+				THETA=0;
+			if(r_ij.z/r<-1.)
+				THETA=M_PI;
                     if(r_ij.x == 0. and r_ij.y == 0.) {
                         PHI=0;
                     }
@@ -145,7 +151,7 @@ double order_para_local(atom Atoms[],int nAtoms,int l,Vector box) {
         }
         Q_Li=4*M_PI/(2*l+1)*Q_Li;
         Q_L=Q_L+sqrt(Q_Li);
-        //cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
+        cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
     }
     delete[] Nb;
     delete[] Q_Li_i;

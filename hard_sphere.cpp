@@ -5,9 +5,9 @@ using namespace std;
 #include "bop.hpp"
 #include <cstdlib>
 
-void print_pos (atom Atoms[],int nAtoms,int i,int index) {
+void print_pos (atom Atoms[],int nAtoms,int i,int index,int n) {
     char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/configs/config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(nc),index);
+    snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(n),index);
     std::ofstream POSITION(buffer,std::ios_base::app);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
@@ -301,8 +301,7 @@ void vmove(atom Atoms[],int nAtoms) {
         Atoms[n].pos.y *= f;
         Atoms[n].pos.z *= f;
     }
-    //flag=check_overlap(Atoms,nAtoms);
-    flag=check_overlap_mc(Atoms,nAtoms);
+    flag=check_overlap(Atoms,nAtoms);
     P=exp(-1.0/(k_b*temp)*(Press*(vol-old_vol)-(nAtoms+1)*k_b*temp*log(vol/old_vol)));
     r=uni_d(rng);
     Iter_v++;
@@ -417,6 +416,7 @@ int main(int argc,char* argv[]) {
     }
     else
     {   std::ifstream infile(argv[3]);
+
         infile>>nAtoms;
         infile>>box.x;
         infile>>START;
@@ -428,7 +428,7 @@ int main(int argc,char* argv[]) {
             Atoms[nAtoms].pos.x=b;
             Atoms[nAtoms].pos.y=c;
             Atoms[nAtoms].pos.z=d;
-	    cout<<nAtoms<<"\t"<<Atoms[nAtoms].pos.x<<"\t"<<Atoms[nAtoms].pos.y<<"\t"<<Atoms[nAtoms].pos.z<<"\n";
+	//    cout<<nAtoms<<"\t"<<Atoms[nAtoms].pos.x<<"\t"<<Atoms[nAtoms].pos.y<<"\t"<<Atoms[nAtoms].pos.z<<"\n";
             nAtoms++;
         }
     	cout<<"hellow\n";
@@ -449,11 +449,11 @@ int main(int argc,char* argv[]) {
     //cin>>temp;
     //cin>>Press;
     //cin>>nc;
-    N=100000;
+    N=600000;
     temp=1.0;
-    Press=6.0;
+    Press=12.42;
     nc=atoi(argv[4]);
-    double EqN=100000;
+    double EqN=600000;
     vol=2*box.x*2*box.y*2*box.z;
     char buffer[64];
     snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,atoi(argv[5]));//_%d_%f.dat",int(nAtoms),Press);
@@ -549,8 +549,7 @@ int main(int argc,char* argv[]) {
             if(rand<nAtoms) {
                 {
 //			cout<<i<<"\t"<<n<<"\t"<<rand<<"\n";
-              mcmove_hardsphere(Atoms,nAtoms);
-//                    mcmove_ver_hardsphere(Atoms,nAtoms);
+                    mcmove_ver_hardsphere(Atoms,nAtoms);
                     N_iter++;
                 }
             }
@@ -604,7 +603,7 @@ int main(int argc,char* argv[]) {
             //     }
             //     HIS.close();
             //   }
-            print_pos(Atoms,nAtoms,i,index);
+            print_pos(Atoms,nAtoms,i,index,n);
         }
         if(bias) {
             if(n==nc) {
@@ -673,8 +672,7 @@ int main(int argc,char* argv[]) {
             rand=uni(rng);
             if(rand<nAtoms) {
                 {
-              mcmove_hardsphere(Atoms,nAtoms);
-//                    mcmove_ver_hardsphere(Atoms,nAtoms);
+                    mcmove_ver_hardsphere(Atoms,nAtoms);
                     N_iter++;
                 }
             }
@@ -685,7 +683,7 @@ int main(int argc,char* argv[]) {
             }
         }
         DENSITY<<i+break_point<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
-        if(bias and (fmod(i,10)==0)) {
+        if(bias and (fmod(i,20)==0)) {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
@@ -696,6 +694,7 @@ int main(int argc,char* argv[]) {
                 //	cout<<i<<"\n";
             }
 //	    if(fmod(i,1000)==0)
+            print_pos(Atoms,nAtoms,i,index,n);
             CS<<i+break_point<<"\t"<<n<<"\n"<<flush;
         }
         den_sum+=density;
@@ -710,7 +709,6 @@ int main(int argc,char* argv[]) {
                     HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
                 }
                 HIS.close();
-                print_pos(Atoms,nAtoms,i,index);
             }
             else
                 g_d=pair_correlation(Atoms,nAtoms,0,box,temp,Press);
