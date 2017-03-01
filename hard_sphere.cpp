@@ -144,26 +144,10 @@ int check_overlap(atom Atoms[],int nAtoms)
             dr.y=(dr.y-(twob*lround(dr.y/twob)));
             dr.z=(dr.z-(twob*lround(dr.z/twob)));
             rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
-            //  dr=v_sub(Atoms[random_integer].pos,Atoms[Atoms[random_integer].neigh_list[i]].pos);
-            //  dr=VWrap(dr,box);
-            //  rr=v_dot(dr,dr);
-            //          cout<<random_integer<<"\t"<<Atoms[random_integer].neigh_list[i]<<"\t"<<rr<<"\n";
             if(rr<R_CUT_HS_sq) {
-//		    cout<<i<<"\t"<<Atoms[i].neigh_list[j]<<"\t"<<rr<<"\n";
                 return 0;
             }
         }
-        //  for(int j=i+1; j<nAtoms; j++)
-        //  {
-        //      dr=v_sub(Atoms[i].pos,Atoms[j].pos);
-        //      dr=VWrap(dr,box);
-        //      rr=v_dot(dr,dr);
-        //      r=sqrt(rr);
-        //      if(r<R_CUT_HS) {
-        //          return 0;
-        //      }
-
-        //  }
 
     }
     return 1;
@@ -451,7 +435,7 @@ int main(int argc,char* argv[]) {
     //cin>>nc;
     N=600000;
     temp=1.0;
-    Press=12.42;
+    Press=20.00;
     nc=atoi(argv[4]);
     double EqN=600000;
     vol=2*box.x*2*box.y*2*box.z;
@@ -494,27 +478,18 @@ int main(int argc,char* argv[]) {
 //#####################################################################################################################################3
     back_up(Atoms,old_Atoms,nAtoms);
     for(int i=START; i<(START+EqN); i++) {
-////////    if(!check_overlap(Atoms,nAtoms))
-////////		  cout<<i<<"\t"<<"whoops\n";
-//	cout<<n<<"\n";
-    //  if(fmod(i,20)==0) {
-    //      close_reset(Atoms,nAtoms);
-    //      n1=largest_cluster(Atoms,nAtoms,l,box);
-    //      HISTOGRAM[n1]++;
-    //      std::ofstream HIS(buffer);
-    //      for(int n=0; n<nAtoms; n++)
-    //      {
-    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-    //      }
-    //      HIS.close();
-    //  }
-        // cout<<"\t"<<n1<<"\n";
-        //  close_reset(old_Atoms,nAtoms);
-        //  n1=largest_cluster(old_Atoms,nAtoms,l,box);
-        //  cout<<n1<<"\n";
-        //  close_reset(Atoms,nAtoms);
-        //  n=largest_cluster(Atoms,nAtoms,l,box);
-        //  cout<<n<<"\n";
+        if(fmod(i,100)==0) {
+            close_reset(Atoms,nAtoms);
+            n1=largest_cluster(Atoms,nAtoms,l,box);
+            HISTOGRAM[n1]++;
+            std::ofstream HIS(buffer);
+            for(int n=0; n<nAtoms; n++)
+            {
+                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+            }
+            CS<<i<<"\t"<<n1<<"\n"<<flush;
+            HIS.close();
+        }
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -560,17 +535,6 @@ int main(int argc,char* argv[]) {
             }
         }
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
-//  for (int i=0; i<nAtoms; i++)
-//  {
-//      dr=VWrap(Atoms[i].pos,box);
-//      cout<<i<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
-//  }
-        //  for(int n=0;n<nAtoms;n++)
-        //  {
-        //  	;
-        //  	cout<<n<<"\t"<<old_Atoms[n].pos.x-Atoms[n].pos.x<<"\t"<<old_Atoms[n].pos.y-Atoms[n].pos.y<<"\t"<<old_Atoms[n].pos.z-Atoms[n].pos.z<<"\n";//<<
-        // // cout<<n<<"\t"<<Atoms[n].pos.x<<"\t"<<Atoms[n].pos.y<<"\t"<<Atoms[n].pos.z<<"\n";//<<
-        //  }
         if(bias)// and (fmod(i,20)==0))
         {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
@@ -582,17 +546,7 @@ int main(int argc,char* argv[]) {
             CS<<i<<"\t"<<n<<"\n"<<flush;
         }
 
-//  for (int i=0; i<nAtoms; i++)
-//  {
-//      dr=VWrap(old_Atoms[i].pos,box);
-//      cout<<R_CUT_HS/2.0<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
-//  }
-        //    cout<<i<<"\n";
-        //  cout<<i<<"\t"<<n<<"\n";
-        //      reset(Atoms,nAtoms);
-//           cout<<i*1.0/EqN<<"\n"<<flush;
 
-        // cout<<i*1.0/EqN<<"\n"<<flush;
         if(fmod(i,1000)==0)
         {   cout<<i*1.0/(START+EqN)<<"\n"<<flush;
             // if(bias) {
@@ -615,7 +569,7 @@ int main(int argc,char* argv[]) {
         }
     }
     if(!bias)
-        break_point=EqN;
+        break_point=START+EqN;
     cout<<"eq completed\n";
     cout<<nei_up*1.0/(N_iter)<<"\n";
     Nacc=0;
@@ -624,23 +578,19 @@ int main(int argc,char* argv[]) {
     Iter_v=0;
     int count=0;
     long double den_sum=0;
-    for(int i=0; i<N; i++) {
-////////if(bias and (fmod(i,10)==0)) {
-////////    close_reset(old_Atoms,nAtoms);
-////////    n=largest_cluster(old_Atoms,nAtoms,l,box);
-////////    cout<<n<<"\n";
-////////}
-    //  if(fmod(i,20)==0) {
-    //      close_reset(Atoms,nAtoms);
-    //      n1=largest_cluster(Atoms,nAtoms,l,box);
-    //      HISTOGRAM[n1]++;
-    //      std::ofstream HIS(buffer);
-    //      for(int n=0; n<nAtoms; n++)
-    //      {
-    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-    //      }
-    //      HIS.close();
-    //  }
+    for(int i=break_point; i<(N+break_point); i++) {
+        if(fmod(i,100)==0) {
+            close_reset(Atoms,nAtoms);
+            n1=largest_cluster(Atoms,nAtoms,l,box);
+            HISTOGRAM[n1]++;
+            std::ofstream HIS(buffer);
+            for(int n=0; n<nAtoms; n++)
+            {
+                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+            }
+            CS<<i<<"\t"<<n1<<"\n"<<flush;
+            HIS.close();
+        }
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -682,7 +632,7 @@ int main(int argc,char* argv[]) {
                 // cout<<box.x<<"\n";
             }
         }
-        DENSITY<<i+break_point<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
+        DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias and (fmod(i,20)==0)) {
             n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
@@ -695,11 +645,13 @@ int main(int argc,char* argv[]) {
             }
 //	    if(fmod(i,1000)==0)
             print_pos(Atoms,nAtoms,i,index,n);
-            CS<<i+break_point<<"\t"<<n<<"\n"<<flush;
+            CS<<i<<"\t"<<n<<"\n"<<flush;
         }
         den_sum+=density;
         if(fmod(i,100)==0)
         {
+	    if(!bias)
+            	print_pos(Atoms,nAtoms,i,index,n);
             if(fmod(i,1000)==0)
             {   cout<<i*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);

@@ -28,7 +28,7 @@ double pair_correlation(atom* Atoms,int nAtoms,int END,Vector box,double temp,do
     counter=counter+1;
     double r_lower,r_upper,omega;
     if(END) {
-	snprintf(buffer,sizeof(char)*32,"OUT/g_r_%f.dat",float(Press));
+	snprintf(buffer,sizeof(char)*32,"OUT/g_r/g_r_%d_%.2f.dat",nAtoms,float(Press));
 	std::ofstream G_R(buffer);
         for(int i=0; i<1000; i++) {
             r_lower=i*bin_width;
