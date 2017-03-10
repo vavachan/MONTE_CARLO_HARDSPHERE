@@ -4,7 +4,6 @@ using namespace std;
 #include "g_r.hpp"
 #include "bop.hpp"
 #include <cstdlib>
-
 void print_pos (atom Atoms[],int nAtoms,int i,int index,int n) {
     char buffer[64];
     snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(n),index);
@@ -145,6 +144,7 @@ int check_overlap(atom Atoms[],int nAtoms)
             dr.z=(dr.z-(twob*lround(dr.z/twob)));
             rr=dr.x*dr.x+dr.y*dr.y+dr.z*dr.z;
             if(rr<R_CUT_HS_sq) {
+//		cout<<i<<"\t"<<Atoms[i].neigh_list[j]<<"\t"<<rr<<"\n";
                 return 0;
             }
         }
@@ -312,7 +312,7 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc,int flag) {
     long double P=0;
-    long double lambda=0.15;
+    long double lambda=0.09;
     long double r;
 // if(flag) {
 //     if(abs(nn-nc)>5)
@@ -343,7 +343,7 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
 
 //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
-//    cout<<nn<<"\t"<<no<<"\n";
+    //cout<<nn<<"\t"<<no<<"\n";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
@@ -391,11 +391,13 @@ int main(int argc,char* argv[]) {
         Atoms = new (nothrow) atom[nAtoms];
         cin>>density;		//Comm
         vol=nAtoms/density;
-        box.x=pow(vol,1.0/3.0)/2.;
-        box.y=pow(vol,1.0/3.0)/2.;
-        box.z=pow(vol,1.0/3.0)/2.;
-       // inipos(Atoms,nAtoms,box);
-        random_ini(Atoms,nAtoms,box,R_CUT_HS);
+//      box.x=pow(vol,1.0/3.0)/2.;
+//      box.y=pow(vol,1.0/3.0)/2.;
+//      box.z=pow(vol,1.0/3.0)/2.;
+     //   inipos(Atoms,nAtoms,box);
+      //  random_ini(Atoms,nAtoms,box,R_CUT_HS);
+        box=FCC(Atoms,nAtoms,box,density);
+        
 
     }
     else
@@ -435,12 +437,21 @@ int main(int argc,char* argv[]) {
     //cin>>nc;
     N=600000;
     temp=1.0;
-    Press=20.00;
-    nc=atoi(argv[4]);
+    Press=12.42;
+    if(restart)
+    {
+    	nc=atoi(argv[4]);
+	index=atoi(argv[5]);
+    }
+    else
+    {
+	nc=atoi(argv[3]);
+    	index=atoi(argv[4]);
+    }
     double EqN=600000;
     vol=2*box.x*2*box.y*2*box.z;
     char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,atoi(argv[5]));//_%d_%f.dat",int(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//_%d_%f.dat",int(nAtoms),Press);
     freopen(buffer,"w",stdout);
     cout<<"no of Atoms:"<<nAtoms<<"\n"<<flush;
     cout<<"N:"<<N<<"\n"<<flush;
@@ -452,14 +463,13 @@ int main(int argc,char* argv[]) {
     cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n"<<flush;
     int END=0;
     int rand=0;
-    index=atoi(argv[5]);
-    snprintf(buffer,sizeof(char)*64,"OUT/density/density_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,atoi(argv[5]));//_%d_%f.dat",int(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/density/density_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//_%d_%f.dat",int(nAtoms),Press);
     std::ofstream DENSITY(buffer);
     cout<<"nc:"<<nc<<"\n"<<flush;
-    snprintf(buffer,sizeof(char)*64,"OUT/clusters/cluster_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,atoi(argv[5]));//);//_%d_%f.dat",int(nc),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/clusters/cluster_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//);//_%d_%f.dat",int(nc),Press);
     std::ofstream CS(buffer);
     int flag=0;
-    snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,atoi(argv[5]));//);
+    snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//);
     atom* old_Atoms;
     old_Atoms = new (nothrow) atom[nAtoms];
     int break_point=0;
@@ -477,6 +487,7 @@ int main(int argc,char* argv[]) {
     Vector dr;
 //#####################################################################################################################################3
     back_up(Atoms,old_Atoms,nAtoms);
+    //exit(0);
     for(int i=START; i<(START+EqN); i++) {
         if(fmod(i,100)==0) {
             close_reset(Atoms,nAtoms);
@@ -579,7 +590,7 @@ int main(int argc,char* argv[]) {
     int count=0;
     long double den_sum=0;
     for(int i=break_point; i<(N+break_point); i++) {
-        if(fmod(i,100)==0) {
+        if(fmod(i,100)==0 and !bias) {
             close_reset(Atoms,nAtoms);
             n1=largest_cluster(Atoms,nAtoms,l,box);
             HISTOGRAM[n1]++;

@@ -13,10 +13,17 @@ int find_cube(int nAtoms) {
             break;
         }
 }
+int find_4cube(int nAtoms) {
+    for(int i=0; 1; i++)
+        if(4*i*i*i>=nAtoms) {
+            return i;
+            break;
+        }
+}
 void inipos(atom * Atoms,int nAtoms,Vector box) {
     int cube=find_cube(nAtoms);
     int n=0;
-    Vector grid;
+    Vector grid,dr;
     grid.x=2*box.x/(cube);
     grid.y=2*box.y/(cube);
     grid.z=2*box.z/(cube);
@@ -32,6 +39,7 @@ void inipos(atom * Atoms,int nAtoms,Vector box) {
                 Atoms[n].pos.z=-box.z+grid.z*k+0.5*grid.z;
                 n++;
             }
+
 }
 Vector inipos_bcc(atom Atoms[],int nAtoms,Vector box,double a) {
     Vector v,X;
@@ -138,14 +146,19 @@ void random_ini(atom Atoms[],int nAtoms,Vector box,double R_CUT_HS)
     }
 
 }
-Vector FCC(atom Atoms[],int nAtoms,Vector box,double a) {
+Vector FCC(atom Atoms[],int nAtoms,Vector box,double density) {
     Vector v,X;
     int count=0;
-    int n=4;
+    double a;
+    //a=pow(4.0/density,1.0/3.0);
+    int n;
+    n=find_4cube(nAtoms);
+    a=pow(nAtoms/(density*n*n*n),1./3.);
     box.x=(n)*a/2;
     box.y=(n)*a/2;
     box.z=(n)*a/2;
-   // cout<<"\n"<<box.x<<"\t"<<box.y<<"\t"<<box.z<<"\n";
+  //  cout<<n<<"\t"<<a<<"\n";
+  //  cout<<"\n"<<box.x<<"\t"<<box.y<<"\t"<<box.z<<"\n";
     for(int i=0; i<n; i++)
         for(int j=0; j<n; j++)
             for(int k=0; k<n; k++)
@@ -153,7 +166,7 @@ Vector FCC(atom Atoms[],int nAtoms,Vector box,double a) {
                 X.x=i*a;
                 X.y=j*a;
                 X.z=k*a;
-		//cout<<count<<"\t"<<X.x<<"\t"<<X.y<<"\t"<<X.z<<"\n";
+	//	cout<<count<<"\t"<<X.x<<"\t"<<X.y<<"\t"<<X.z<<"\n";
                 Atoms[count].pos=v_add(X,v);
                 Atoms[count].pos=v_sub(Atoms[count].pos,box);
                 count=count+1;
@@ -168,6 +181,7 @@ Vector FCC(atom Atoms[],int nAtoms,Vector box,double a) {
                 X.x=i*a;
                 X.y=j*a;
                 X.z=k*a;
+		//cout<<count<<"\t"<<X.x<<"\t"<<X.y<<"\t"<<X.z<<"\n";
                 Atoms[count].pos=v_add(X,v);
                 Atoms[count].pos=v_sub(Atoms[count].pos,box);
                 count=count+1;
@@ -183,6 +197,7 @@ Vector FCC(atom Atoms[],int nAtoms,Vector box,double a) {
                 X.x=i*a;
                 X.y=j*a;
                 X.z=k*a;
+		//cout<<count<<"\t"<<X.x<<"\t"<<X.y<<"\t"<<X.z<<"\n";
                 Atoms[count].pos=v_add(X,v);
                 Atoms[count].pos=v_sub(Atoms[count].pos,box);
                 count=count+1;
@@ -194,13 +209,18 @@ Vector FCC(atom Atoms[],int nAtoms,Vector box,double a) {
         for(int j=0; j<n; j++)
             for(int k=0; k<n; k++)
             {
+		if(count>nAtoms-1)
+			break;
                 X.x=i*a;
                 X.y=j*a;
                 X.z=k*a;
+		//cout<<count<<"\t"<<X.x<<"\t"<<X.y<<"\t"<<X.z<<"\n";
                 Atoms[count].pos=v_add(X,v);
                 Atoms[count].pos=v_sub(Atoms[count].pos,box);
                 count=count+1;
             }
-    cout<<"\nnatoms:"<<"\t"<<count<<"\n";
+//	for(int i=0;i<nAtoms;i++)
+//            cout<<i<<"\t"<<Atoms[i].pos.x<<"\t"<<Atoms[i].pos.y<<"\t"<<Atoms[i].pos.z<<"\t"<<count<<"\n";
+//    cout<<"\nnatoms:"<<"\t"<<count<<"\n";
     return box;
 }
