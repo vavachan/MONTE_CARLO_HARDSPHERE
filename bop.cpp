@@ -347,7 +347,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
         Q_Li=4*M_PI/(2*l+1)*Q_Li;
         Q_local[i]=sqrt(Q_Li);
         Q_L=Q_L+sqrt(Q_Li);
-//	cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
+	//cout<<i<<"\t"<<sqrt(Q_Li)<<"\t"<<Nb[i]<<"\n";
     }
     for(int n=0; n<nAtoms; n++) {
         Nc[n]=0;
@@ -434,7 +434,7 @@ long largest_cluster(atom Atoms[],int nAtoms,int l,Vector box) {
     }
     long max=0;
     for(int i=0; i<nAtoms; i++)
-    {  // cout<<i<<"\t"<<Atoms[i].cluster_index<<"\n";
+    {   //cout<<i<<"\t"<<Atoms[i].cluster_index<<"\n";
         if(Atoms[i].cluster_index!=-1)
             Nc[Atoms[i].cluster_index]++;
     }

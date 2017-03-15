@@ -322,6 +322,7 @@ int move_accept(long nn,long no,long nc,int flag) {
 // }
 //   else {
     P=exp(-1.0/temp*(lambda/2.0)*((nn-nc)*(nn-nc)-(no-nc)*(no-nc)));
+    //cout<<nn<<"\t"<<no<<"\t"<<P<<"\n";
     r=uni_d(rng);
     if(P>1)
     {
@@ -343,7 +344,7 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
 
 //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
-    //cout<<nn<<"\t"<<no<<"\n";
+    //cout<<nn<<"\t"<<no<<"\t";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
@@ -391,12 +392,12 @@ int main(int argc,char* argv[]) {
         Atoms = new (nothrow) atom[nAtoms];
         cin>>density;		//Comm
         vol=nAtoms/density;
-//      box.x=pow(vol,1.0/3.0)/2.;
-//      box.y=pow(vol,1.0/3.0)/2.;
-//      box.z=pow(vol,1.0/3.0)/2.;
+        box.x=pow(vol,1.0/3.0)/2.;
+        box.y=pow(vol,1.0/3.0)/2.;
+        box.z=pow(vol,1.0/3.0)/2.;
      //   inipos(Atoms,nAtoms,box);
-      //  random_ini(Atoms,nAtoms,box,R_CUT_HS);
-        box=FCC(Atoms,nAtoms,box,density);
+        random_ini(Atoms,nAtoms,box,R_CUT_HS);
+//  box=FCC(Atoms,nAtoms,box,density);
         
 
     }
@@ -437,7 +438,7 @@ int main(int argc,char* argv[]) {
     //cin>>nc;
     N=600000;
     temp=1.0;
-    Press=12.42;
+    Press=16.00;
     if(restart)
     {
     	nc=atoi(argv[4]);
@@ -489,18 +490,19 @@ int main(int argc,char* argv[]) {
     back_up(Atoms,old_Atoms,nAtoms);
     //exit(0);
     for(int i=START; i<(START+EqN); i++) {
-        if(fmod(i,100)==0) {
-            close_reset(Atoms,nAtoms);
-            n1=largest_cluster(Atoms,nAtoms,l,box);
-            HISTOGRAM[n1]++;
-            std::ofstream HIS(buffer);
-            for(int n=0; n<nAtoms; n++)
-            {
-                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-            }
-            CS<<i<<"\t"<<n1<<"\n"<<flush;
-            HIS.close();
-        }
+    //  if(fmod(i,100)==0 and !bias) {
+    //      close_reset(Atoms,nAtoms);
+    //  //n1=largest_cluster(Atoms,nAtoms,l,box);
+    //      HISTOGRAM[n1]++;
+    //      std::ofstream HIS(buffer);
+    //      for(int n=0; n<nAtoms; n++)
+    //      {
+    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+    //      }
+    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
+    //      HIS.close();
+    //  }
+	//cout<<i<<"\n";
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -554,11 +556,11 @@ int main(int argc,char* argv[]) {
             old_box=box;
             // HISTOGRAM[n]+=1;
 //	    if(fmod(i,1000)==0)
-            CS<<i<<"\t"<<n<<"\n"<<flush;
+//        CS<<i<<"\t"<<n<<"\n"<<flush;
         }
 
 
-        if(fmod(i,1000)==0)
+        if(fmod(i,100)==0)
         {   cout<<i*1.0/(START+EqN)<<"\n"<<flush;
             // if(bias) {
             //     std::ofstream HIS(buffer);
@@ -590,18 +592,18 @@ int main(int argc,char* argv[]) {
     int count=0;
     long double den_sum=0;
     for(int i=break_point; i<(N+break_point); i++) {
-        if(fmod(i,100)==0 and !bias) {
-            close_reset(Atoms,nAtoms);
-            n1=largest_cluster(Atoms,nAtoms,l,box);
-            HISTOGRAM[n1]++;
-            std::ofstream HIS(buffer);
-            for(int n=0; n<nAtoms; n++)
-            {
-                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-            }
-            CS<<i<<"\t"<<n1<<"\n"<<flush;
-            HIS.close();
-        }
+    //  if(fmod(i,100)==0 and !bias) {
+    //      close_reset(Atoms,nAtoms);
+    //      n1=largest_cluster(Atoms,nAtoms,l,box);
+    //      HISTOGRAM[n1]++;
+    //      std::ofstream HIS(buffer);
+    //      for(int n=0; n<nAtoms; n++)
+    //      {
+    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+    //      }
+    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
+    //      HIS.close();
+    //  }
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
