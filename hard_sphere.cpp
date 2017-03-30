@@ -673,7 +673,7 @@ int main(int argc,char* argv[]) {
             if(!bias)
                 print_pos(Atoms,nAtoms,i,index,n);
             if(fmod(i,1000)==0)
-            {   cout<<i*1.0/N<<"\n"<<flush;
+            {   cout<<(i-break_point)*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
                 std::ofstream HIS(buffer);
                 for(int n=0; n<nAtoms; n++)
