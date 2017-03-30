@@ -430,7 +430,7 @@ int main(int argc,char* argv[]) {
     }
 //##############################################################################################################################
     neigh_list_update(Atoms,nAtoms);
-    HISTOGRAM = new (nothrow) long [nAtoms];
+    HISTOGRAM = new (nothrow) long [nAtoms+1];
     if(Atoms==nullptr) {
         cout<<"Memory Allocation Failed\n";
         return 0;
