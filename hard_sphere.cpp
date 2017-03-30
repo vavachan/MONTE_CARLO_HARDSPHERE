@@ -4,20 +4,29 @@ using namespace std;
 #include "g_r.hpp"
 #include "bop.hpp"
 #include <cstdlib>
+#include <iomanip>
 void print_pos (atom Atoms[],int nAtoms,int i,int index,int n) {
     char buffer[64];
     snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(n),index);
     std::ofstream POSITION(buffer,std::ios_base::app);
+    snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/restart_config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(nc),index);
+    std::ofstream R_POSITION(buffer);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
     POSITION<<i<<"\n";
+    R_POSITION<<nAtoms<<"\n";
+    R_POSITION<<box.x<<"\n";
+    R_POSITION<<i<<"\n";
     Vector dr;
     for (int i=0; i<nAtoms; i++)
     {
         dr=VWrap(Atoms[i].pos,box);
-        POSITION<<R_CUT_HS/2.0<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
+        POSITION<<R_CUT_HS/2.0<<setprecision(15)<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
+        R_POSITION<<R_CUT_HS/2.0<<setprecision(15)<<"\t"<<dr.x<<"\t"<<dr.y<<"\t"<<dr.z<<"\n";
     }
     POSITION.close();
+    R_POSITION.close();
+
 }
 int neigh_list_update(atom Atoms[],int nAtoms) {
     Vector dr;
@@ -113,17 +122,17 @@ int check_overlap_mc(atom Atoms[],int nAtoms)
     long double rr,r;
     long double twob=2*box.x;
     for(int i=0; i<nAtoms; i++) {
-            for(int j=i+1; j<nAtoms; j++)
-            {
-                dr=v_sub(Atoms[i].pos,Atoms[j].pos);
-                dr=VWrap(dr,box);
-                rr=v_dot(dr,dr);
-                r=sqrt(rr);
-                if(r<R_CUT_HS) {
-                    return 0;
-                }
-
+        for(int j=i+1; j<nAtoms; j++)
+        {
+            dr=v_sub(Atoms[i].pos,Atoms[j].pos);
+            dr=VWrap(dr,box);
+            rr=v_dot(dr,dr);
+            r=sqrt(rr);
+            if(r<R_CUT_HS) {
+                return 0;
             }
+
+        }
 
     }
     return 1;
@@ -312,7 +321,7 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc,int flag) {
     long double P=0;
-    long double lambda=0.09;
+    long double lambda=0.01;
     long double r;
 // if(flag) {
 //     if(abs(nn-nc)>5)
@@ -395,11 +404,9 @@ int main(int argc,char* argv[]) {
         box.x=pow(vol,1.0/3.0)/2.;
         box.y=pow(vol,1.0/3.0)/2.;
         box.z=pow(vol,1.0/3.0)/2.;
-     //   inipos(Atoms,nAtoms,box);
-        random_ini(Atoms,nAtoms,box,R_CUT_HS);
-//  box=FCC(Atoms,nAtoms,box,density);
-        
-
+        //   inipos(Atoms,nAtoms,box);
+        //  random_ini(Atoms,nAtoms,box,R_CUT_HS);
+        box=FCC(Atoms,nAtoms,box,density);
     }
     else
     {   std::ifstream infile(argv[3]);
@@ -415,10 +422,10 @@ int main(int argc,char* argv[]) {
             Atoms[nAtoms].pos.x=b;
             Atoms[nAtoms].pos.y=c;
             Atoms[nAtoms].pos.z=d;
-	//    cout<<nAtoms<<"\t"<<Atoms[nAtoms].pos.x<<"\t"<<Atoms[nAtoms].pos.y<<"\t"<<Atoms[nAtoms].pos.z<<"\n";
+            //    cout<<nAtoms<<"\t"<<Atoms[nAtoms].pos.x<<"\t"<<Atoms[nAtoms].pos.y<<"\t"<<Atoms[nAtoms].pos.z<<"\n";
             nAtoms++;
         }
-    	cout<<"hellow\n";
+        cout<<"hellow\n";
         density=nAtoms/(2*box.x*2*box.y*2*box.z);
     }
 //##############################################################################################################################
@@ -436,20 +443,20 @@ int main(int argc,char* argv[]) {
     //cin>>temp;
     //cin>>Press;
     //cin>>nc;
-    N=600000;
+    N=2000000;
     temp=1.0;
-    Press=16.00;
+    Press=12.42;
     if(restart)
     {
-    	nc=atoi(argv[4]);
-	index=atoi(argv[5]);
+        nc=atoi(argv[4]);
+        index=atoi(argv[5]);
     }
     else
     {
-	nc=atoi(argv[3]);
-    	index=atoi(argv[4]);
+        nc=atoi(argv[3]);
+        index=atoi(argv[4]);
     }
-    double EqN=600000;
+    double EqN=2000000;
     vol=2*box.x*2*box.y*2*box.z;
     char buffer[64];
     snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//_%d_%f.dat",int(nAtoms),Press);
@@ -490,19 +497,19 @@ int main(int argc,char* argv[]) {
     back_up(Atoms,old_Atoms,nAtoms);
     //exit(0);
     for(int i=START; i<(START+EqN); i++) {
-    //  if(fmod(i,100)==0 and !bias) {
-    //      close_reset(Atoms,nAtoms);
-    //  //n1=largest_cluster(Atoms,nAtoms,l,box);
-    //      HISTOGRAM[n1]++;
-    //      std::ofstream HIS(buffer);
-    //      for(int n=0; n<nAtoms; n++)
-    //      {
-    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-    //      }
-    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
-    //      HIS.close();
-    //  }
-	//cout<<i<<"\n";
+        if(fmod(i,20)==0 and !bias) {
+            close_reset(Atoms,nAtoms);
+            n1=largest_cluster(Atoms,nAtoms,l,box);
+            HISTOGRAM[n1]++;
+            std::ofstream HIS(buffer);
+            for(int n=0; n<nAtoms; n++)
+            {
+                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+            }
+            CS<<i<<"\t"<<n1<<"\n"<<flush;
+            HIS.close();
+        }
+        //cout<<i<<"\n";
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -556,7 +563,7 @@ int main(int argc,char* argv[]) {
             old_box=box;
             // HISTOGRAM[n]+=1;
 //	    if(fmod(i,1000)==0)
-//        CS<<i<<"\t"<<n<<"\n"<<flush;
+            CS<<i<<"\t"<<n<<"\n"<<flush;
         }
 
 
@@ -592,18 +599,18 @@ int main(int argc,char* argv[]) {
     int count=0;
     long double den_sum=0;
     for(int i=break_point; i<(N+break_point); i++) {
-    //  if(fmod(i,100)==0 and !bias) {
-    //      close_reset(Atoms,nAtoms);
-    //      n1=largest_cluster(Atoms,nAtoms,l,box);
-    //      HISTOGRAM[n1]++;
-    //      std::ofstream HIS(buffer);
-    //      for(int n=0; n<nAtoms; n++)
-    //      {
-    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-    //      }
-    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
-    //      HIS.close();
-    //  }
+        if(fmod(i,20)==0 and !bias) {
+            close_reset(Atoms,nAtoms);
+            n1=largest_cluster(Atoms,nAtoms,l,box);
+            HISTOGRAM[n1]++;
+            std::ofstream HIS(buffer);
+            for(int n=0; n<nAtoms; n++)
+            {
+                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+            }
+            CS<<i<<"\t"<<n1<<"\n"<<flush;
+            HIS.close();
+        }
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -663,8 +670,8 @@ int main(int argc,char* argv[]) {
         den_sum+=density;
         if(fmod(i,100)==0)
         {
-	    if(!bias)
-            	print_pos(Atoms,nAtoms,i,index,n);
+            if(!bias)
+                print_pos(Atoms,nAtoms,i,index,n);
             if(fmod(i,1000)==0)
             {   cout<<i*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
