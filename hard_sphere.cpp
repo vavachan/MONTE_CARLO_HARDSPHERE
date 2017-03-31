@@ -445,7 +445,7 @@ int main(int argc,char* argv[]) {
     //cin>>nc;
     N=2000000;
     temp=1.0;
-    Press=12.42;
+    Press=16.00;
     if(restart)
     {
         nc=atoi(argv[4]);
@@ -502,7 +502,7 @@ int main(int argc,char* argv[]) {
             n1=largest_cluster(Atoms,nAtoms,l,box);
             HISTOGRAM[n1]++;
             std::ofstream HIS(buffer);
-            for(int n=0; n<nAtoms; n++)
+            for(int n=0; n<nAtoms+1; n++)
             {
                 HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
             }
@@ -604,7 +604,7 @@ int main(int argc,char* argv[]) {
             n1=largest_cluster(Atoms,nAtoms,l,box);
             HISTOGRAM[n1]++;
             std::ofstream HIS(buffer);
-            for(int n=0; n<nAtoms; n++)
+            for(int n=0; n<nAtoms+1; n++)
             {
                 HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
             }
@@ -663,7 +663,7 @@ int main(int argc,char* argv[]) {
                 count++;
                 //	cout<<i<<"\n";
             }
-//	    if(fmod(i,1000)==0)
+	    if(fmod(i,500)==0)
             print_pos(Atoms,nAtoms,i,index,n);
             CS<<i<<"\t"<<n<<"\n"<<flush;
         }
@@ -676,7 +676,7 @@ int main(int argc,char* argv[]) {
             {   cout<<(i-break_point)*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
                 std::ofstream HIS(buffer);
-                for(int n=0; n<nAtoms; n++)
+                for(int n=0; n<nAtoms+1; n++)
                 {
                     HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
                 }
