@@ -321,7 +321,7 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc,int flag) {
     long double P=0;
-    long double lambda=0.01;
+    long double lambda=0.15;
     long double r;
 // if(flag) {
 //     if(abs(nn-nc)>5)
