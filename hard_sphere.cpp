@@ -4,12 +4,13 @@ using namespace std;
 #include "g_r.hpp"
 #include "bop.hpp"
 #include <cstdlib>
+#include <string.h>
 #include <iomanip>
-void print_pos (atom Atoms[],int nAtoms,int i,int index,int n) {
+void print_pos (atom Atoms[],int nAtoms,int i,char label[],int n) {
     char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(n),index);
+    snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/config_%.2f_%d_%.2f_%d_%s.dat",temp,nAtoms,Press,int(n),label);
     std::ofstream POSITION(buffer,std::ios_base::app);
-    snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/restart_config_%.2f_%d_%.2f_%d_%d.dat",temp,nAtoms,Press,int(nc),index);
+    snprintf(buffer,sizeof(char)*64,"OUT/configs/n_config/restart_config_%.2f_%d_%.2f_%d_%s.dat",temp,nAtoms,Press,int(nc),label);
     std::ofstream R_POSITION(buffer);
     POSITION<<nAtoms<<"\n";
     POSITION<<box.x<<"\n";
@@ -321,7 +322,7 @@ void vmove(atom Atoms[],int nAtoms) {
 }
 int move_accept(long nn,long no,long nc,int flag) {
     long double P=0;
-    long double lambda=0.01;
+    long double lambda=0.15;
     long double r;
 // if(flag) {
 //     if(abs(nn-nc)>5)
@@ -376,6 +377,7 @@ int main(int argc,char* argv[]) {
     bool bias;
     int START=0;
     int index=0;
+    char label[20];
 //##############################################################################################################################
     std::string action(argv[1]);
     if (action == "restart") {
@@ -445,22 +447,25 @@ int main(int argc,char* argv[]) {
     //cin>>nc;
     N=2000000;
     temp=1.0;
-    Press=16.00;
     if(restart)
     {
         nc=atoi(argv[4]);
-        index=atoi(argv[5]);
+//    index=atoi(argv[5]);
+	strncpy(label,argv[5],sizeof(label)-1);
+    	Press=stof(argv[6]);
     }
     else
     {
         nc=atoi(argv[3]);
-        index=atoi(argv[4]);
+//index=atoi(argv[4]);
+	strncpy(label,argv[5],sizeof(label)-1);
+    	Press=stof(argv[5]);
     }
     double EqN=2000000;
     vol=2*box.x*2*box.y*2*box.z;
     char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//_%d_%f.dat",int(nAtoms),Press);
-    freopen(buffer,"w",stdout);
+    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,label);//_%d_%f.dat",int(nAtoms),Press);
+    //freopen(buffer,"w",stdout);
     cout<<"no of Atoms:"<<nAtoms<<"\n"<<flush;
     cout<<"N:"<<N<<"\n"<<flush;
     cout<<"EqN:"<<EqN<<"\n"<<flush;
@@ -471,13 +476,13 @@ int main(int argc,char* argv[]) {
     cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n"<<flush;
     int END=0;
     int rand=0;
-    snprintf(buffer,sizeof(char)*64,"OUT/density/density_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//_%d_%f.dat",int(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/density/density_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//_%d_%f.dat",int(nAtoms),Press);
     std::ofstream DENSITY(buffer);
     cout<<"nc:"<<nc<<"\n"<<flush;
-    snprintf(buffer,sizeof(char)*64,"OUT/clusters/cluster_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//);//_%d_%f.dat",int(nc),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/clusters/cluster_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);//_%d_%f.dat",int(nc),Press);
     std::ofstream CS(buffer);
     int flag=0;
-    snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,index);//);
+    snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);
     atom* old_Atoms;
     old_Atoms = new (nothrow) atom[nAtoms];
     int break_point=0;
@@ -577,7 +582,7 @@ int main(int argc,char* argv[]) {
             //     }
             //     HIS.close();
             //   }
-            print_pos(Atoms,nAtoms,i,index,n);
+            print_pos(Atoms,nAtoms,i,label,n);
         }
         if(bias) {
             if(n==nc) {
@@ -664,14 +669,14 @@ int main(int argc,char* argv[]) {
                 //	cout<<i<<"\n";
             }
 	    if(fmod(i,500)==0)
-            print_pos(Atoms,nAtoms,i,index,n);
+	            print_pos(Atoms,nAtoms,i,label,n);
             CS<<i<<"\t"<<n<<"\n"<<flush;
         }
         den_sum+=density;
         if(fmod(i,100)==0)
         {
             if(!bias)
-                print_pos(Atoms,nAtoms,i,index,n);
+                print_pos(Atoms,nAtoms,i,label,n);
             if(fmod(i,1000)==0)
             {   cout<<(i-break_point)*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
