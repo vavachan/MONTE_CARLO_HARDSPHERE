@@ -348,12 +348,12 @@ int move_accept(long nn,long no,long nc,int flag) {
     }
     // }
 }
-long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[]) {
+long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[],char label[]) {
     long nn=0;
     close_reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
 
 //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
-    nn=largest_cluster(Atoms,nAtoms,l,box);  //calculate the new largest cluster in the system.
+    nn=largest_cluster(Atoms,nAtoms,l,box,label);  //calculate the new largest cluster in the system.
     //cout<<nn<<"\t"<<no<<"\t";
     if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
@@ -494,7 +494,7 @@ int main(int argc,char* argv[]) {
     int N_iter=0;
     close_reset(Atoms,nAtoms);
     clock_t begin=clock();
-    n=largest_cluster(Atoms,nAtoms,l,box); // calculate the largest cluster in the initial config.
+    n=largest_cluster(Atoms,nAtoms,l,box,label); // calculate the largest cluster in the initial config.
     cout<<"n="<<n<<"\n"<<flush;
     int n1;
     Vector dr;
@@ -504,7 +504,7 @@ int main(int argc,char* argv[]) {
     for(int i=START; i<(START+EqN); i++) {
         if(fmod(i,20)==0 and !bias) {
             close_reset(Atoms,nAtoms);
-            n1=largest_cluster(Atoms,nAtoms,l,box);
+            n1=largest_cluster(Atoms,nAtoms,l,box,label);
             HISTOGRAM[n1]++;
             std::ofstream HIS(buffer);
             for(int n=0; n<nAtoms+1; n++)
@@ -562,7 +562,7 @@ int main(int argc,char* argv[]) {
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias)// and (fmod(i,20)==0))
         {
-            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label);
 
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
@@ -606,7 +606,7 @@ int main(int argc,char* argv[]) {
     for(int i=break_point; i<(N+break_point); i++) {
         if(fmod(i,20)==0 and !bias) {
             close_reset(Atoms,nAtoms);
-            n1=largest_cluster(Atoms,nAtoms,l,box);
+            n1=largest_cluster(Atoms,nAtoms,l,box,label);
             HISTOGRAM[n1]++;
             std::ofstream HIS(buffer);
             for(int n=0; n<nAtoms+1; n++)
@@ -659,7 +659,7 @@ int main(int argc,char* argv[]) {
         }
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias and (fmod(i,20)==0)) {
-            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM);
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label);
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
             if(flag)
