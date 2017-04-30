@@ -349,14 +349,14 @@ int move_accept(long nn,long no,long nc,int flag) {
     }
     // }
 }
-long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[],char label[]) {
+long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[],char label[],long nc_temp) {
     long nn=0;
     close_reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
 
 //   reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
     nn=largest_cluster(Atoms,nAtoms,l,box,label);  //calculate the new largest cluster in the system.
     //cout<<nn<<"\t"<<no<<"\t";
-    if(move_accept(nn,no,nc,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
+    if(move_accept(nn,no,nc_temp,flag)) //move_Accept determines if the move should be accepted or note depending on the bias potential.
     {
         no=nn; // if it is accepted then no is the new nn.
         return no;
@@ -372,6 +372,7 @@ int main(int argc,char* argv[]) {
     int nAtoms,N;
     long* HISTOGRAM;
     long n;
+    long tempnc;
     long double g_d;
     atom* Atoms;
     bool restart;
@@ -513,6 +514,11 @@ int main(int argc,char* argv[]) {
     Vector dr;
 //#####################################################################################################################################3
     back_up(Atoms,old_Atoms,nAtoms);
+    if(n<nc)
+        tempnc=int(n/10)*10+10;
+    if(n>nc)
+        tempnc=nc;
+    cout<<my_id<<"\t"<<tempnc<<"\n";
     //exit(0);
     for(int i=START; i<(START+EqN); i++) {
         if(fmod(i,20)==0 and !bias) {
@@ -575,7 +581,7 @@ int main(int argc,char* argv[]) {
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias)// and (fmod(i,20)==0))
         {
-            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label);
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label,tempnc);
 
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
@@ -598,6 +604,12 @@ int main(int argc,char* argv[]) {
             print_pos(Atoms,nAtoms,i,label,n);
         }
         if(bias) {
+            if(n==tempnc)
+	    {
+    		cout<<my_id<<"\t"<<tempnc<<"\n";
+                tempnc=tempnc+10;
+	    //	cout<<"tenmpnc\t"<<tempnc<<"\n";
+	    }
             if(n==nc) {
                 flag=1;
                 break_point=i;
@@ -609,9 +621,9 @@ int main(int argc,char* argv[]) {
     if(!bias and equilibriate)
     {
         break_point=START+EqN;
-	flag=1;
+        flag=1;
     }
-    flag=1; 
+    flag=1;
     cout<<"eq completed\n";
     cout<<nei_up*1.0/(N_iter)<<"\n";
     Nacc=0;
@@ -668,20 +680,20 @@ int main(int argc,char* argv[]) {
             local = new (nothrow) int[2*numproc];
             all = new (nothrow) int[2*numproc];
             for(int k=0; k<2*numproc; k++)
-	    {
+            {
                 local[k]=0;
-		all[k]=0;
-	    }
+                all[k]=0;
+            }
             local[my_id+0*numproc]=n;
             local[my_id+1*numproc]=nc;
-          //  cout<<my_id<<"\t"<<n<<"\t"<<nc<<"\n";
+            //  cout<<my_id<<"\t"<<n<<"\t"<<nc<<"\n";
             MPI_Reduce(&local[0], &all[0], 2*numproc, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
             MPI_Barrier(MPI_COMM_WORLD);
-	  //  cout<<"first_all\n";
-          //  cout<<my_id<<"\t";
-          //  for(int k=0; k<2*numproc; k++)
-          //      cout<<all[k]<<"\t";
-          //  cout<<"\n";
+            //  cout<<"first_all\n";
+            //  cout<<my_id<<"\t";
+            //  for(int k=0; k<2*numproc; k++)
+            //      cout<<all[k]<<"\t";
+            //  cout<<"\n";
             local[my_id+0*numproc]=0;
             local[my_id+1*numproc]=0;
             if (my_id==0)
@@ -694,7 +706,7 @@ int main(int argc,char* argv[]) {
                 {
                     CUR_CLU[k]=all[k+0*numproc];
                     BIAS[k]=all[k+1*numproc];
-	//	    cout<<my_id<<"\t"<<CUR_CLU[k]<<"bias\t"<<BIAS[k]<<"\n";
+                    //	    cout<<my_id<<"\t"<<CUR_CLU[k]<<"bias\t"<<BIAS[k]<<"\n";
                 }
                 int direction = 1;
                 int start = 0;
@@ -704,65 +716,65 @@ int main(int argc,char* argv[]) {
                     start = 1;
                     end = numproc;
                 }
-		double lambda=0.15;
-		for(int k=start ;k<end ;k++)
-		{
-			int nbr=k+direction;
-			double w_o=0.5*lambda*(CUR_CLU[k]-BIAS[k])*(CUR_CLU[k]-BIAS[k])+0.5*lambda*(CUR_CLU[nbr]-BIAS[nbr])*(CUR_CLU[nbr]-BIAS[nbr]);
-			double w_n=0.5*lambda*(CUR_CLU[k]-BIAS[nbr])*(CUR_CLU[k]-BIAS[nbr])+0.5*lambda*(CUR_CLU[nbr]-BIAS[k])*(CUR_CLU[nbr]-BIAS[k]);
-			int swap=0;
-			if(w_n <= w_o)
-				swap=1;
-			else if (exp(-1.*(w_n-w_o)) < drand48()){
-				swap=0;
-			}
-			else{
-			       swap=1;
-			}
-			if(swap)
-			{
-				//cout<<"swap\t"<<k<;
-				double swapn=BIAS[nbr]; 
-				double swapk=BIAS[k];
-				//double swn=CUR_CLU[nbr]; 
-				//double swk=CUR_CLU[k];
-			//	cout<<"inswap\t"<<k<<"\t"<<nbr<<"\n";
-				local[k+1*numproc]=swapn;
-				BIAS[k]=swapn;
-				local[k+0*numproc]=1.0;
-				local[nbr+1*numproc]=swapk;
-				BIAS[nbr]=swapk;
-				local[nbr+0*numproc]=1.0;
+                double lambda=0.15;
+                for(int k=start ; k<end ; k++)
+                {
+                    int nbr=k+direction;
+                    double w_o=0.5*lambda*(CUR_CLU[k]-BIAS[k])*(CUR_CLU[k]-BIAS[k])+0.5*lambda*(CUR_CLU[nbr]-BIAS[nbr])*(CUR_CLU[nbr]-BIAS[nbr]);
+                    double w_n=0.5*lambda*(CUR_CLU[k]-BIAS[nbr])*(CUR_CLU[k]-BIAS[nbr])+0.5*lambda*(CUR_CLU[nbr]-BIAS[k])*(CUR_CLU[nbr]-BIAS[k]);
+                    int swap=0;
+                    if(w_n <= w_o)
+                        swap=1;
+                    else if (exp(-1.*(w_n-w_o)) < drand48()) {
+                        swap=0;
+                    }
+                    else {
+                        swap=1;
+                    }
+                    if(swap)
+                    {
+                        //cout<<"swap\t"<<k<;
+                        double swapn=BIAS[nbr];
+                        double swapk=BIAS[k];
+                        //double swn=CUR_CLU[nbr];
+                        //double swk=CUR_CLU[k];
+                        //	cout<<"inswap\t"<<k<<"\t"<<nbr<<"\n";
+                        local[k+1*numproc]=swapn;
+                        BIAS[k]=swapn;
+                        local[k+0*numproc]=1.0;
+                        local[nbr+1*numproc]=swapk;
+                        BIAS[nbr]=swapk;
+                        local[nbr+0*numproc]=1.0;
 
-			}
-         	// cout<<k<<"\t";
-         	// for(int k=0; k<2*numproc; k++)
-         	//     cout<<local[k]<<"\t";
-        	// cout<<"\n";
-			
+                    }
+                    // cout<<k<<"\t";
+                    // for(int k=0; k<2*numproc; k++)
+                    //     cout<<local[k]<<"\t";
+                    // cout<<"\n";
 
-		}	
 
-		
+                }
+
+
 
             }
-         // cout<<my_id<<"\t";
-         // for(int k=0; k<2*numproc; k++)
-         //     cout<<local[k]<<"\t";
-         // cout<<"\n";
+            // cout<<my_id<<"\t";
+            // for(int k=0; k<2*numproc; k++)
+            //     cout<<local[k]<<"\t";
+            // cout<<"\n";
 
             MPI_Barrier(MPI_COMM_WORLD);
             MPI_Allreduce (&local[0], &all[0], 2*numproc, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-	//  cout<<my_id<<"\t"<<"clu\t"<<all[my_id+0*numproc]<<"\n";
-	//  cout<<my_id<<"\t"<<"bias\t"<<all[my_id+1*numproc]<<"\n";
-	    if(all[my_id+0*numproc])
-	    	nc=all[my_id+1*numproc];
-	  //  cout<<my_id<<"\t"<<n<<"\t"<<nc<<"\n";
-          //cout<<my_id<<"\t";
-          //for(int k=0; k<2*numproc; k++)
-          //    cout<<all[k]<<"\t";
-          //cout<<"\n";
-	    
+            //  cout<<my_id<<"\t"<<"clu\t"<<all[my_id+0*numproc]<<"\n";
+            //  cout<<my_id<<"\t"<<"bias\t"<<all[my_id+1*numproc]<<"\n";
+            if(all[my_id+0*numproc])
+                nc=all[my_id+1*numproc];
+            //  cout<<my_id<<"\t"<<n<<"\t"<<nc<<"\n";
+            //cout<<my_id<<"\t";
+            //for(int k=0; k<2*numproc; k++)
+            //    cout<<all[k]<<"\t";
+            //cout<<"\n";
+
             delete[] local;
             delete[] all;
         }
@@ -785,7 +797,7 @@ int main(int argc,char* argv[]) {
         }
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias and (fmod(i,20)==0)) {
-            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label);
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label,nc);
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
 //	    cout<<"yo\t"<<flag<<"\n";
@@ -793,7 +805,7 @@ int main(int argc,char* argv[]) {
             {
                 HISTOGRAM[n]++;
                 count++;
-    //            cout<<i<<"\t"<<n<<"\n";
+                //            cout<<i<<"\t"<<n<<"\n";
             }
             if(fmod(i,500)==0)
                 print_pos(Atoms,nAtoms,i,label,n);
