@@ -349,7 +349,7 @@ int move_accept(long nn,long no,long nc,int flag) {
     }
     // }
 }
-long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,long HISTOGRAM[],char label[],long nc_temp) {
+long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,int flag,char label[],long nc_temp) {
     long nn=0;
     close_reset(Atoms,nAtoms);  // remove the cluster labels from the atoms
 
@@ -370,7 +370,7 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
 }
 int main(int argc,char* argv[]) {
     int nAtoms,N;
-    long* HISTOGRAM;
+    long** HISTOGRAM;
     long n;
     long tempnc;
     long double g_d;
@@ -435,15 +435,15 @@ int main(int argc,char* argv[]) {
     }
 //##############################################################################################################################
     neigh_list_update(Atoms,nAtoms);
-    HISTOGRAM = new (nothrow) long [nAtoms+1];
+   // HISTOGRAM = new (nothrow) long [nAtoms+1];
     if(Atoms==nullptr) {
         cout<<"Memory Allocation Failed\n";
         return 0;
     }
-    for(int i=0; i<nAtoms+1; i++)
-    {
-        HISTOGRAM[i]=0;
-    }
+   // for(int i=0; i<nAtoms+1; i++)
+   // {
+     //   HISTOGRAM[i]=0;
+   // }
     //cin>>N;
     //cin>>temp;
     //cin>>Press;
@@ -488,6 +488,12 @@ int main(int argc,char* argv[]) {
     MPI_Comm_rank (MPI_COMM_WORLD, &my_id);
     MPI_Comm_size (MPI_COMM_WORLD, &numproc);
     nc=10+my_id*10;
+
+    HISTOGRAM = new (nothrow) long* [numproc];
+    for(int i=0; i<numproc; i++)
+    {
+        HISTOGRAM[i] = new (nothrow) long [nAtoms+1];
+    }
     int END=0;
     int rand=0;
     snprintf(buffer,sizeof(char)*64,"OUT/density/density_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//_%d_%f.dat",int(nAtoms),Press);
@@ -496,7 +502,6 @@ int main(int argc,char* argv[]) {
     snprintf(buffer,sizeof(char)*64,"OUT/clusters/cluster_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);//_%d_%f.dat",int(nc),Press);
     std::ofstream CS(buffer);
     int flag=0;
-    snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);
     atom* old_Atoms;
     old_Atoms = new (nothrow) atom[nAtoms];
     int break_point=0;
@@ -521,18 +526,18 @@ int main(int argc,char* argv[]) {
     cout<<my_id<<"\t"<<tempnc<<"\n";
     //exit(0);
     for(int i=START; i<(START+EqN); i++) {
-        if(fmod(i,20)==0 and !bias) {
-            close_reset(Atoms,nAtoms);
-            n1=largest_cluster(Atoms,nAtoms,l,box,label);
-            HISTOGRAM[n1]++;
-            std::ofstream HIS(buffer);
-            for(int n=0; n<nAtoms+1; n++)
-            {
-                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-            }
-            CS<<i<<"\t"<<n1<<"\n"<<flush;
-            HIS.close();
-        }
+    //  if(fmod(i,20)==0 and !bias) {
+    //      close_reset(Atoms,nAtoms);
+    //      n1=largest_cluster(Atoms,nAtoms,l,box,label);
+    //      HISTOGRAM[n1]++;
+    //      std::ofstream HIS(buffer);
+    //      for(int n=0; n<nAtoms+1; n++)
+    //      {
+    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+    //      }
+    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
+    //      HIS.close();
+    //  }
         //cout<<i<<"\n";
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
@@ -581,7 +586,7 @@ int main(int argc,char* argv[]) {
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias)// and (fmod(i,20)==0))
         {
-            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label,tempnc);
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,label,tempnc);
 
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
@@ -636,18 +641,18 @@ int main(int argc,char* argv[]) {
     //#############################################################################################
     //sampling !!!!
     for(int i=break_point; i<(N+break_point); i++) {
-        if(fmod(i,20)==0 and !bias) {
-            close_reset(Atoms,nAtoms);
-            n1=largest_cluster(Atoms,nAtoms,l,box,label);
-            HISTOGRAM[n1]++;
-            std::ofstream HIS(buffer);
-            for(int n=0; n<nAtoms+1; n++)
-            {
-                HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-            }
-            CS<<i<<"\t"<<n1<<"\n"<<flush;
-            HIS.close();
-        }
+    //  if(fmod(i,20)==0 and !bias) {
+    //      close_reset(Atoms,nAtoms);
+    //      n1=largest_cluster(Atoms,nAtoms,l,box,label);
+    //      HISTOGRAM[n1]++;
+    //      std::ofstream HIS(buffer);
+    //      for(int n=0; n<nAtoms+1; n++)
+    //      {
+    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+    //      }
+    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
+    //      HIS.close();
+    //  }
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -733,7 +738,7 @@ int main(int argc,char* argv[]) {
                     }
                     if(swap)
                     {
-                        //cout<<"swap\t"<<k<;
+                        cout<<"swap\n";
                         double swapn=BIAS[nbr];
                         double swapk=BIAS[k];
                         //double swn=CUR_CLU[nbr];
@@ -797,13 +802,13 @@ int main(int argc,char* argv[]) {
         }
         DENSITY<<i<<"\t"<<M_PI/6.0*density<<"\n"<<flush;
         if(bias and (fmod(i,20)==0)) {
-            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,HISTOGRAM,label,nc);
+            n=umbrella(Atoms,old_Atoms,nAtoms,l,box,n,flag,label,nc);
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
 //	    cout<<"yo\t"<<flag<<"\n";
             if(flag)
             {
-                HISTOGRAM[n]++;
+                HISTOGRAM[(nc-10)/10][n]++;
                 count++;
                 //            cout<<i<<"\t"<<n<<"\n";
             }
@@ -819,10 +824,11 @@ int main(int argc,char* argv[]) {
             if(fmod(i,1000)==0)
             {   cout<<(i-break_point)*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
+    		snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);//_%d_%f.dat",int(nc),Press);
                 std::ofstream HIS(buffer);
                 for(int n=0; n<nAtoms+1; n++)
                 {
-                    HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+                    HIS<<n<<"\t"<<float(HISTOGRAM[(nc-10)/10][n])<<"\n"<<flush;
                 }
                 HIS.close();
             }
@@ -838,7 +844,10 @@ int main(int argc,char* argv[]) {
     double elapsed_time= double (end-begin)/CLOCKS_PER_SEC;
     cout<<elapsed_time/60.<<"\n";
     delete[] Atoms;
-    delete[] HISTOGRAM;
+    for(int i=0; i<numproc; i++)
+    {
+        delete [] HISTOGRAM[i];
+    }
     delete[] old_Atoms;
 
     return 0;
