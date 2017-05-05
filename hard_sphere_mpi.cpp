@@ -381,7 +381,13 @@ int main(int argc,char* argv[]) {
     int index=0;
     char label[20];
     bool equilibriate=true;
-//##############################################################################################################################
+//############################################################################################
+//MPI STUFF
+    int my_id,numproc;
+    MPI_Init (&argc, &argv);
+    MPI_Comm_rank (MPI_COMM_WORLD, &my_id);
+    MPI_Comm_size (MPI_COMM_WORLD, &numproc);
+    nc=10+my_id*10;
     std::string action(argv[1]);
     if (action == "restart") {
         restart= true;
@@ -414,8 +420,10 @@ int main(int argc,char* argv[]) {
         box=FCC(Atoms,nAtoms,box,density);
     }
     else
-    {   std::ifstream infile(argv[3]);
-
+    {   
+    	char buffer[64];
+    	snprintf(buffer,sizeof(char)*64,"OUT/%d_16",nc);//_%d_%f.dat",int(nAtoms),Press);
+	std::ifstream infile(buffer);
         infile>>nAtoms;
         infile>>box.x;
         infile>>START;
@@ -452,17 +460,15 @@ int main(int argc,char* argv[]) {
     temp=1.0;
     if(restart)
     {
-        nc=atoi(argv[4]);
 //    index=atoi(argv[5]);
-        strncpy(label,argv[5],sizeof(label)-1);
-        Press=stof(argv[6]);
+        strncpy(label,argv[3],sizeof(label)-1);
+        Press=stof(argv[4]);
     }
     else
     {
-        nc=atoi(argv[3]);
 //index=atoi(argv[4]);
-        strncpy(label,argv[5],sizeof(label)-1);
-        Press=stof(argv[5]);
+        strncpy(label,argv[3],sizeof(label)-1);
+        Press=stof(argv[4]);
     }
     double EqN;
     if(equilibriate)
@@ -471,7 +477,7 @@ int main(int argc,char* argv[]) {
         EqN=0;
     vol=2*box.x*2*box.y*2*box.z;
     char buffer[64];
-    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%d.dat",int(nAtoms),int(nc),Press,label);//_%d_%f.dat",int(nAtoms),Press);
+    snprintf(buffer,sizeof(char)*64,"OUT/out_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//_%d_%f.dat",int(nAtoms),Press);
     //freopen(buffer,"w",stdout);
     cout<<"no of Atoms:"<<nAtoms<<"\n"<<flush;
     cout<<"N:"<<N<<"\n"<<flush;
@@ -481,14 +487,6 @@ int main(int argc,char* argv[]) {
     cout<<"box:"<<box.x<<"\n"<<flush;
     cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z)<<"\n"<<flush;
     cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n"<<flush;
-//############################################################################################
-//MPI STUFF
-    int my_id,numproc;
-    MPI_Init (&argc, &argv);
-    MPI_Comm_rank (MPI_COMM_WORLD, &my_id);
-    MPI_Comm_size (MPI_COMM_WORLD, &numproc);
-    nc=10+my_id*10;
-
     HISTOGRAM = new (nothrow) long* [numproc];
     for(int i=0; i<numproc; i++)
     {
@@ -519,11 +517,11 @@ int main(int argc,char* argv[]) {
     Vector dr;
 //#####################################################################################################################################3
     back_up(Atoms,old_Atoms,nAtoms);
-    if(n<nc)
-        tempnc=int(n/10)*10+10;
-    if(n>nc)
-        tempnc=nc;
-    cout<<my_id<<"\t"<<tempnc<<"\n";
+ // if(n<nc)
+ //     tempnc=int(n/10)*10+10;
+ // if(n>nc)
+      tempnc=nc;
+ //   cout<<my_id<<"\t"<<tempnc<<"\n";
     //exit(0);
     for(int i=START; i<(START+EqN); i++) {
     //  if(fmod(i,20)==0 and !bias) {
