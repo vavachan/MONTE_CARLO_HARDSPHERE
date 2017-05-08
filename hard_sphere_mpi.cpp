@@ -427,6 +427,7 @@ int main(int argc,char* argv[]) {
         infile>>nAtoms;
         infile>>box.x;
         infile>>START;
+	START=0;
         box.z=box.y=box.x;
         Atoms = new (nothrow) atom[nAtoms];
         long double a,b,c,d;				//uncomment the
@@ -588,22 +589,12 @@ int main(int argc,char* argv[]) {
 
             back_up(Atoms,old_Atoms,nAtoms); //we need a copy of the config before the move.
             old_box=box;
-            // HISTOGRAM[n]+=1;
-//	    if(fmod(i,1000)==0)
-            CS<<i<<"\t"<<n<<"\n"<<flush;
+            //CS<<i<<"\t"<<n<<"\n"<<flush;
         }
 
 
         if(fmod(i,100)==0)
         {   cout<<i*1.0/(START+EqN)<<"\n"<<flush;
-            // if(bias) {
-            //     std::ofstream HIS(buffer);
-            //     for(int n=0; n<nAtoms; n++)
-            //     {
-            //         HIS<<n<<"\t"<<float(HISTOGRAM[n])/i<<"\n"<<flush;
-            //     }
-            //     HIS.close();
-            //   }
             print_pos(Atoms,nAtoms,i,label,n);
         }
         if(bias) {
@@ -638,6 +629,7 @@ int main(int argc,char* argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     //#############################################################################################
     //sampling !!!!
+    break_point=0;
     for(int i=break_point; i<(N+break_point); i++) {
     //  if(fmod(i,20)==0 and !bias) {
     //      close_reset(Atoms,nAtoms);
@@ -806,6 +798,7 @@ int main(int argc,char* argv[]) {
 //	    cout<<"yo\t"<<flag<<"\n";
             if(flag)
             {
+		//cout<<i<<"\t"<<my_id<<"\t"<<"ha\t"<<(nc-10)/10<<"\n";
                 HISTOGRAM[(nc-10)/10][n]++;
                 count++;
                 //            cout<<i<<"\t"<<n<<"\n";
@@ -819,11 +812,16 @@ int main(int argc,char* argv[]) {
         {
             if(!bias)
                 print_pos(Atoms,nAtoms,i,label,n);
+            MPI_Barrier(MPI_COMM_WORLD);
             if(fmod(i,1000)==0)
             {   cout<<(i-break_point)*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
     		snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);//_%d_%f.dat",int(nc),Press);
                 std::ofstream HIS(buffer);
+	////////int sum=0;
+	////////for(int k=0;k<nAtoms;k++)
+	////////	sum=sum+HISTOGRAM[(nc-10)/10][k];
+	////////cout<<my_id<<"\tsum\t"<<sum<<"\n";
                 for(int n=0; n<nAtoms+1; n++)
                 {
                     HIS<<n<<"\t"<<float(HISTOGRAM[(nc-10)/10][n])<<"\n"<<flush;
