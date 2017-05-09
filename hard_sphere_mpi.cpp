@@ -371,6 +371,7 @@ long umbrella(atom Atoms[],atom old_Atoms[],int nAtoms,int l,Vector box,long no,
 int main(int argc,char* argv[]) {
     int nAtoms,N;
     long** HISTOGRAM;
+    long** SUMHISTOGRAM;
     long n;
     long tempnc;
     long double g_d;
@@ -420,14 +421,14 @@ int main(int argc,char* argv[]) {
         box=FCC(Atoms,nAtoms,box,density);
     }
     else
-    {   
-    	char buffer[64];
-    	snprintf(buffer,sizeof(char)*64,"OUT/%d_16",nc);//_%d_%f.dat",int(nAtoms),Press);
-	std::ifstream infile(buffer);
+    {
+        char buffer[64];
+        snprintf(buffer,sizeof(char)*64,"OUT/%d_216_12.42",nc);//_%d_%f.dat",int(nAtoms),Press);
+        std::ifstream infile(buffer);
         infile>>nAtoms;
         infile>>box.x;
         infile>>START;
-	START=0;
+        START=0;
         box.z=box.y=box.x;
         Atoms = new (nothrow) atom[nAtoms];
         long double a,b,c,d;				//uncomment the
@@ -444,15 +445,15 @@ int main(int argc,char* argv[]) {
     }
 //##############################################################################################################################
     neigh_list_update(Atoms,nAtoms);
-   // HISTOGRAM = new (nothrow) long [nAtoms+1];
+    // HISTOGRAM = new (nothrow) long [nAtoms+1];
     if(Atoms==nullptr) {
         cout<<"Memory Allocation Failed\n";
         return 0;
     }
-   // for(int i=0; i<nAtoms+1; i++)
-   // {
-     //   HISTOGRAM[i]=0;
-   // }
+    // for(int i=0; i<nAtoms+1; i++)
+    // {
+    //   HISTOGRAM[i]=0;
+    // }
     //cin>>N;
     //cin>>temp;
     //cin>>Press;
@@ -489,9 +490,17 @@ int main(int argc,char* argv[]) {
     cout<<"density:"<<nAtoms/(2*box.x*2*box.y*2*box.z)<<"\n"<<flush;
     cout<<"overlap:"<<check_overlap(Atoms,nAtoms)<<"\n"<<flush;
     HISTOGRAM = new (nothrow) long* [numproc];
+    SUMHISTOGRAM = new (nothrow) long* [numproc];
     for(int i=0; i<numproc; i++)
     {
         HISTOGRAM[i] = new (nothrow) long [nAtoms+1];
+        SUMHISTOGRAM[i] = new (nothrow) long [nAtoms+1];
+        for(int k=0; k<nAtoms+1; k++)
+	{
+            HISTOGRAM[i][k]=0;
+            SUMHISTOGRAM[i][k]=0;
+	}
+
     }
     int END=0;
     int rand=0;
@@ -518,25 +527,25 @@ int main(int argc,char* argv[]) {
     Vector dr;
 //#####################################################################################################################################3
     back_up(Atoms,old_Atoms,nAtoms);
- // if(n<nc)
- //     tempnc=int(n/10)*10+10;
- // if(n>nc)
-      tempnc=nc;
- //   cout<<my_id<<"\t"<<tempnc<<"\n";
+// if(n<nc)
+//     tempnc=int(n/10)*10+10;
+// if(n>nc)
+    tempnc=nc;
+//   cout<<my_id<<"\t"<<tempnc<<"\n";
     //exit(0);
     for(int i=START; i<(START+EqN); i++) {
-    //  if(fmod(i,20)==0 and !bias) {
-    //      close_reset(Atoms,nAtoms);
-    //      n1=largest_cluster(Atoms,nAtoms,l,box,label);
-    //      HISTOGRAM[n1]++;
-    //      std::ofstream HIS(buffer);
-    //      for(int n=0; n<nAtoms+1; n++)
-    //      {
-    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-    //      }
-    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
-    //      HIS.close();
-    //  }
+        //  if(fmod(i,20)==0 and !bias) {
+        //      close_reset(Atoms,nAtoms);
+        //      n1=largest_cluster(Atoms,nAtoms,l,box,label);
+        //      HISTOGRAM[n1]++;
+        //      std::ofstream HIS(buffer);
+        //      for(int n=0; n<nAtoms+1; n++)
+        //      {
+        //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+        //      }
+        //      CS<<i<<"\t"<<n1<<"\n"<<flush;
+        //      HIS.close();
+        //  }
         //cout<<i<<"\n";
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
@@ -599,11 +608,11 @@ int main(int argc,char* argv[]) {
         }
         if(bias) {
             if(n==tempnc)
-	    {
-    		cout<<my_id<<"\t"<<tempnc<<"\n";
+            {
+                cout<<my_id<<"\t"<<tempnc<<"\n";
                 tempnc=tempnc+10;
-	    //	cout<<"tenmpnc\t"<<tempnc<<"\n";
-	    }
+                //	cout<<"tenmpnc\t"<<tempnc<<"\n";
+            }
             if(n==nc) {
                 flag=1;
                 break_point=i;
@@ -631,18 +640,18 @@ int main(int argc,char* argv[]) {
     //sampling !!!!
     break_point=0;
     for(int i=break_point; i<(N+break_point); i++) {
-    //  if(fmod(i,20)==0 and !bias) {
-    //      close_reset(Atoms,nAtoms);
-    //      n1=largest_cluster(Atoms,nAtoms,l,box,label);
-    //      HISTOGRAM[n1]++;
-    //      std::ofstream HIS(buffer);
-    //      for(int n=0; n<nAtoms+1; n++)
-    //      {
-    //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
-    //      }
-    //      CS<<i<<"\t"<<n1<<"\n"<<flush;
-    //      HIS.close();
-    //  }
+        //  if(fmod(i,20)==0 and !bias) {
+        //      close_reset(Atoms,nAtoms);
+        //      n1=largest_cluster(Atoms,nAtoms,l,box,label);
+        //      HISTOGRAM[n1]++;
+        //      std::ofstream HIS(buffer);
+        //      for(int n=0; n<nAtoms+1; n++)
+        //      {
+        //          HIS<<n<<"\t"<<float(HISTOGRAM[n])<<"\n"<<flush;
+        //      }
+        //      CS<<i<<"\t"<<n1<<"\n"<<flush;
+        //      HIS.close();
+        //  }
         if(fmod(i,5)==0) {
             if(Nacc*(1.0/Iter)<0.5)
             {
@@ -728,12 +737,12 @@ int main(int argc,char* argv[]) {
                     }
                     if(swap)
                     {
-                        cout<<"swap\n";
+                        //cout<<"swap\n";
                         double swapn=BIAS[nbr];
                         double swapk=BIAS[k];
                         //double swn=CUR_CLU[nbr];
                         //double swk=CUR_CLU[k];
-                        //	cout<<"inswap\t"<<k<<"\t"<<nbr<<"\n";
+                        cout<<"inswap\t"<<k<<"\t"<<nbr<<"\n";
                         local[k+1*numproc]=swapn;
                         BIAS[k]=swapn;
                         local[k+0*numproc]=1.0;
@@ -798,7 +807,7 @@ int main(int argc,char* argv[]) {
 //	    cout<<"yo\t"<<flag<<"\n";
             if(flag)
             {
-		//cout<<i<<"\t"<<my_id<<"\t"<<"ha\t"<<(nc-10)/10<<"\n";
+                //cout<<i<<"\t"<<my_id<<"\t"<<"ha\t"<<(nc-10)/10<<"\n";
                 HISTOGRAM[(nc-10)/10][n]++;
                 count++;
                 //            cout<<i<<"\t"<<n<<"\n";
@@ -816,17 +825,28 @@ int main(int argc,char* argv[]) {
             if(fmod(i,1000)==0)
             {   cout<<(i-break_point)*1.0/N<<"\n"<<flush;
                 g_d=pair_correlation(Atoms,nAtoms,1,box,temp,Press);
-    		snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%s.dat",int(nAtoms),int(nc),Press,label);//);//_%d_%f.dat",int(nc),Press);
-                std::ofstream HIS(buffer);
-	////////int sum=0;
-	////////for(int k=0;k<nAtoms;k++)
-	////////	sum=sum+HISTOGRAM[(nc-10)/10][k];
-	////////cout<<my_id<<"\tsum\t"<<sum<<"\n";
-                for(int n=0; n<nAtoms+1; n++)
+                MPI_Barrier(MPI_COMM_WORLD);
+                for(int k=0; k<numproc; k++)
                 {
-                    HIS<<n<<"\t"<<float(HISTOGRAM[(nc-10)/10][n])<<"\n"<<flush;
+                    MPI_Reduce(HISTOGRAM[k],SUMHISTOGRAM[k],nAtoms,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
                 }
-                HIS.close();
+                if(my_id==0)
+                {
+                    for(int j=0; j<numproc; j++)
+                    {
+                        snprintf(buffer,sizeof(char)*64,"OUT/Histogram/Histogram_%d_%d_%.2f_%s.dat",int(nAtoms),int(j),Press,label);//);//_%d_%f.dat",int(nc),Press);
+                        std::ofstream HIS(buffer);
+                        for(int n=0; n<nAtoms+1; n++)
+                        {
+                            HIS<<n<<"\t"<<float(SUMHISTOGRAM[j][n])<<"\n"<<flush;
+                        }
+                	int sum=0;
+                        for(int k=0; k<nAtoms; k++)
+                            sum=sum+SUMHISTOGRAM[j][k];
+                        cout<<j<<"\tsum\t"<<sum<<"\n";
+                        HIS.close();
+                    }
+                }
             }
             else
                 g_d=pair_correlation(Atoms,nAtoms,0,box,temp,Press);
